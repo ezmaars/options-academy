@@ -1925,47 +1925,95 @@ async function askAI() {
   const spy = liveData['SPY'];
   const qqq = liveData['QQQ'];
   const iwm = liveData['IWM'];
-  const marketCtx = `Live market: VIX=${vix ? vix.toFixed(1) : 'N/A'}, SPY=${spy ? '$'+spy.c.toFixed(2)+' ('+spy.dp.toFixed(2)+'%)' : 'N/A'}, QQQ=${qqq ? '$'+qqq.c.toFixed(2) : 'N/A'}, IWM=${iwm ? '$'+iwm.c.toFixed(2) : 'N/A'}.`;
-  const systemPrompt = `You are an expert options trading advisor inside the Options Academy app. ${marketCtx} Give specific, actionable recommendations tied to current VIX and market conditions. Include: strategy name, why it fits NOW, suggested strikes/DTE, max risk, one key warning. Under 200 words. Use emojis for structure.`;
 
-  // AbortController for timeout — prevents freezing
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  // Small delay to show typing animation
+  await new Promise(r => setTimeout(r, 600));
 
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: aiChatHistory,
-      })
-    });
-    clearTimeout(timeout);
-    if (!res.ok) throw new Error('status ' + res.status);
-    const data = await res.json();
-    const reply = data.content?.[0]?.text;
-    if (!reply) throw new Error('empty');
-    aiChatHistory.push({ role: 'assistant', content: reply });
-    document.getElementById('aiTyping').style.display = 'none';
-    addChatMessage('assistant', reply);
+  document.getElementById('aiTyping').style.display = 'none';
 
-  } catch(e) {
-    clearTimeout(timeout);
-    document.getElementById('aiTyping').style.display = 'none';
-    // Instant fallback — no freeze
-    const fallback = generateAIResponse(q, vix, spy, qqq, iwm);
-    aiChatHistory.push({ role: 'assistant', content: fallback });
-    const isLocal = ['127.0.0.1','localhost',''].includes(window.location.hostname);
-    const note = isLocal ? '\n\n💡 Host this file on a server for live Claude AI responses.' : '';
-    addChatMessage('assistant', fallback + note);
-  }
+  // Generate smart dynamic response using live market data
+  const reply = generateAIResponse(q, vix, spy, qqq, iwm);
+  aiChatHistory.push({ role: 'assistant', content: reply });
+  addChatMessage('assistant', reply);
 
   btn.disabled = false;
   btn.style.opacity = '1';
+}
+
+function generateAIResponse(q, vix, spy, qqq, iwm) {
+  const vixVal = vix || 20;
+  const spyChg = spy?.dp || 0;
+  const spyPrice = spy?.c ? '$' + spy.c.toFixed(2) : 'N/A';
+  const regime = vixVal < 15 ? 'low' : vixVal < 25 ? 'normal' : vixVal < 35 ? 'high' : 'extreme';
+  const mktDir = spyChg > 0.5 ? 'bullish' : spyChg < -0.5 ? 'bearish' : 'neutral';
+  const ql = q.toLowerCase();
+
+  const isHedge    = /hedge|protect|crash|downside|insurance|scared|cover.*loss|lose/i.test(q);
+  const isIncome   = /income|premium|sell|wheel|covered|monthly|passive|credit/i.test(q);
+  const isBullish  = /bullish|bull|upside|call|long|buy.*stock|rise|higher|going up/i.test(q);
+  const isBearish  = /bearish|bear|put|short|fall|drop|down|lower|going down/i.test(q);
+  const isEarnings = /earn|report|quarter|announcement|event/i.test(q);
+  const is0DTE     = /0dte|0 dte|same day|intraday|today.*expir/i.test(q);
+  const isGreeks   = /delta|theta|gamma|vega|greek/i.test(q);
+  const isGeneral  = /what.*trade|best.*strategy|recommend|suggest|where.*market|today/i.test(q);
+
+  const symMatch = q.match(/\b([A-Z]{2,5})\b/);
+  const sym = symMatch ? symMatch[1] : 'SPY';
+
+  const vixLine = `📊 VIX: ${vixVal.toFixed(1)} (${regime} vol) | SPY: ${spyPrice} ${spyChg >= 0 ? '▲' : '▼'}${Math.abs(spyChg).toFixed(2)}%`;
+
+  if (isGreeks) {
+    return `${vixLine}\n\n🔬 GREEKS EXPLAINED WITH CURRENT MARKET CONTEXT\n\nWith VIX at ${vixVal.toFixed(1)}:\n\n📐 Delta — Your position moves ~$0.50 per $1 on ATM options. SPY at ${spyPrice} means each point = $100/contract on SPY.\n\n⏰ Theta — ${vixVal < 20 ? 'Low IV means less theta. Sellers earn less daily but buyers pay less.' : 'Elevated IV means fat theta. Sellers collect more per day — great for income.'} At 30 DTE theta accelerates.\n\n💥 Gamma — ${vixVal < 20 ? 'Low VIX = lower gamma. Safer for sellers.' : 'High VIX = explosive gamma near expiry. 0DTE positions can move 200% in minutes.'}\n\n📈 Vega — ${vixVal < 18 ? 'IV is LOW — buy options! Long vega wins if IV expands.' : vixVal > 28 ? 'IV is HIGH — sell options! Short vega wins as IV crushes.' : 'IV is neutral. Both buying and selling have merit.'}\n\n⚠️ Warning: Never ignore theta when buying options. Time is always working against you.`;
+  }
+
+  if (isHedge) {
+    const putCost = vixVal < 18 ? '1–2%' : '2–4%';
+    return `${vixLine}\n\n🛡️ HEDGE STRATEGY FOR ${sym}\n\n${vixVal < 20
+      ? `✅ BUY Protective Put (IV is cheap now!)\n• Buy 1 put per 100 shares you own\n• Strike: 5% below current price\n• Expiry: 45–60 DTE\n• Cost: ~${putCost} of position value\n• This is your best window — IV at ${vixVal.toFixed(1)} is low`
+      : `✅ Bear Put SPREAD (outright puts are expensive at VIX ${vixVal.toFixed(1)})\n• Buy ATM put, Sell 8% lower put\n• Cuts hedge cost by ~50%\n• Protects against moderate drop\n• Expiry: 30–45 DTE`}\n\n💡 Collar Alternative: Sell an OTM call to fund your put — net zero cost hedge.\n\n⚠️ Warning: Hedges expire. Re-evaluate every 30 days.`;
+  }
+
+  if (isIncome) {
+    return `${vixLine}\n\n💰 INCOME STRATEGY (${regime.toUpperCase()} VOL)\n\n${vixVal > 25
+      ? `✅ #1: Iron Condor on SPX/SPY — VIX ${vixVal.toFixed(1)} = fat premiums!\n• Sell 16-delta put spread + 16-delta call spread\n• 30–45 DTE\n• Target credit: $3–5 on SPY, $8–15 on SPX\n• Manage at 50% profit\n\n✅ #2: Short Strangle (size down — undefined risk)\n• Sell 0.20 delta strangle\n• Only if account > $25k and experienced`
+      : `✅ #1: Covered Call on holdings\n• Sell 0.30 delta call, 30 DTE on stocks you own\n• Monthly income of 1–2%\n\n✅ #2: Cash-Secured Put on ${sym}\n• Sell 0.25 delta put, 30–45 DTE\n• Get paid to wait for a better entry price\n\n✅ #3: The Wheel\n• CSP → assigned → Covered Call → repeat`}\n\n⚠️ Warning: Never sell naked options without understanding max loss. Always use spreads to start.`;
+  }
+
+  if (isEarnings) {
+    return `${vixLine}\n\n📅 EARNINGS PLAY FOR ${sym}\n\n${vixVal < 22
+      ? `✅ LONG STRADDLE/STRANGLE — IV moderate, worth buying\n• Buy ATM call + ATM put expiring right after earnings\n• Profit if stock moves more than premium paid\n• Check expected move in your broker first!\n• Enter 1–3 days before, NOT day of (IV spikes too high)`
+      : `⚠️ IV is ELEVATED (VIX ${vixVal.toFixed(1)}) — buying expensive!\n✅ Consider IRON CONDOR instead:\n• Sell both sides assuming the move is overpriced\n• Only if IV rank > 60% for that specific stock`}\n\n📐 Expected move formula:\n• ATM Call + ATM Put = total expected move\n• Example: $8 + $7 = ±$15 expected range\n\n⚠️ Warning: ALWAYS close before earnings if selling premium. Gap risk is real.`;
+  }
+
+  if (isBullish) {
+    return `${vixLine}\n\n📈 BULLISH STRATEGY FOR ${sym}\n\n${vixVal < 18
+      ? `✅ LONG CALL — IV cheap, great time to buy!\n• Buy 0.45–0.50 delta call on ${sym}\n• 30–60 DTE for balance of time vs cost\n• Risk = premium paid only\n• Current market is ${mktDir} — momentum helps`
+      : `✅ BULL CALL SPREAD — IV elevated, reduce cost\n• Buy lower strike call, sell higher strike call\n• Same expiry, 30–45 DTE\n• Costs 40–50% less than outright call\n• Max profit capped at spread width`}\n\n✅ ALSO: Bull Put Spread (collect credit)\n• Sell OTM put spread below support\n• Profit if ${sym} stays flat or rises\n\n⚠️ Warning: Set a stop at 50% of premium paid. Don't hold calls into expiry hoping.`;
+  }
+
+  if (isBearish) {
+    return `${vixLine}\n\n📉 BEARISH STRATEGY FOR ${sym}\n\n${vixVal > 25
+      ? `⚠️ Puts are EXPENSIVE — VIX at ${vixVal.toFixed(1)}\n✅ Bear Put SPREAD instead:\n• Buy ATM put, sell 8–10% lower put\n• Cuts cost by ~50% vs long put\n• Still profits on moderate decline`
+      : `✅ LONG PUT — IV reasonable for buying\n• Buy 0.35–0.45 delta put on ${sym}\n• 30–45 DTE\n• Risk = premium paid only`}\n\n✅ Bear Call Spread (credit-based bearish):\n• Sell OTM call spread above resistance\n• Collect credit if ${sym} stays flat or falls\n\n⚠️ Warning: Being early on bearish trades is the same as being wrong. Size small — max 2% of account.`;
+  }
+
+  if (is0DTE) {
+    return `${vixLine}\n\n⚡ 0DTE STRATEGY GUIDE\n\nBest 0DTE setups for TODAY:\n\n${spyChg > 0.3
+      ? `Market trending UP ${spyChg.toFixed(1)}% — consider:\n• Bull Call Spread on SPX (5–10 pts wide)\n• Sell OTM put spread below today's low`
+      : spyChg < -0.3
+      ? `Market trending DOWN ${Math.abs(spyChg).toFixed(1)}% — consider:\n• Bear Put Spread on SPX (5–10 pts wide)\n• Sell OTM call spread above today's high`
+      : `Market FLAT today — consider:\n• Iron Condor centered around current SPX price\n• Butterfly Spread at current price`}\n\n📐 Universal 0DTE rules:\n• Never risk > 1–2% of account per trade\n• Take profit at 50–75% — don't get greedy\n• Use SPX (cash-settled) not SPY to avoid assignment\n• Stop loss = 2× your profit target\n\n⚠️ Warning: 0DTE gamma is extreme. A 0.30 delta can become 0.90 delta in 30 minutes.`;
+  }
+
+  // General / catch-all — fully dynamic based on live data
+  const strategies = {
+    low:     ['Long Calls/Puts — IV is cheap, great time to buy', 'Long Straddle before upcoming catalysts', 'LEAPS as stock replacement with leverage'],
+    normal:  ['Iron Condor 30–45 DTE — balanced premium', 'Bull/Bear Vertical Spreads for direction', 'Covered Calls for monthly income', 'Cash-Secured Puts on stocks you like'],
+    high:    ['Iron Condor — collect elevated premium', 'Short Strangle sized down (experienced only)', 'Covered Calls — highest income environment'],
+    extreme: ['Protective Puts to hedge existing longs', 'Small defined-risk Iron Condors only', 'Avoid naked/undefined risk entirely'],
+  };
+
+  return `${vixLine}\n\n🤖 OPTIONS ACADEMY ADVISOR\n\nBased on current conditions (VIX ${vixVal.toFixed(1)}, SPY ${spyChg >= 0 ? '▲' : '▼'}${Math.abs(spyChg).toFixed(1)}%):\n\n✅ TOP STRATEGIES RIGHT NOW:\n${strategies[regime].map((s,i) => `${i+1}. ${s}`).join('\n')}\n\n📐 Market regime guide:\n• VIX < 15 → Buy options (cheap IV)\n• VIX 15–25 → Spreads & condors\n• VIX 25–35 → Sell premium aggressively\n• VIX > 35 → Reduce size, manage risk\n\n💬 Ask me anything specific:\n"Best hedge for my NVDA position?"\n"0DTE iron condor setup?"\n"How to trade earnings on TSLA?"\n\n⚠️ Educational only — not financial advice.`;
 }
 
 function updateAIMarketSummary() {

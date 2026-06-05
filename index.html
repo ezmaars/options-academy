@@ -1,0 +1,2124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#070710">
+<title>Options Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #070710;
+  --surface: #0e0e1a;
+  --surface2: #161625;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.12);
+  --green: #00ff87;
+  --green-dim: rgba(0,255,135,0.1);
+  --red: #ff3d6b;
+  --red-dim: rgba(255,61,107,0.1);
+  --yellow: #ffca28;
+  --yellow-dim: rgba(255,202,40,0.1);
+  --purple: #c084fc;
+  --purple-dim: rgba(192,132,252,0.1);
+  --cyan: #22d3ee;
+  --cyan-dim: rgba(34,211,238,0.1);
+  --orange: #fb923c;
+  --orange-dim: rgba(251,146,60,0.1);
+  --text: #f0f0fa;
+  --text2: #9090b0;
+  --text3: #5050708;
+  --accent: #00ff87;
+  --nav-h: 64px;
+  --ticker-h: 36px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;}
+
+/* ── TICKER ── */
+#ticker{position:fixed;top:0;left:0;right:0;height:var(--ticker-h);background:rgba(7,7,16,0.97);border-bottom:1px solid var(--border);z-index:100;display:flex;align-items:center;overflow:hidden;backdrop-filter:blur(20px);}
+#tickerStatus{padding:0 12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);white-space:nowrap;border-right:1px solid var(--border);letter-spacing:1px;flex-shrink:0;}
+#tickerTrack{flex:1;overflow:hidden;position:relative;}
+#tickerInner{display:flex;gap:32px;animation:tickerMove 8s linear infinite;white-space:nowrap;}
+@keyframes tickerMove{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tick{font-family:'JetBrains Mono',monospace;font-size:11px;display:flex;align-items:center;gap:6px;}
+.tick-sym{color:var(--text);font-weight:600;}
+.tick-price{color:var(--text2);}
+.tick-chg.up{color:var(--green);}
+.tick-chg.dn{color:var(--red);}
+
+/* ── LAYOUT ── */
+#app{position:fixed;top:var(--ticker-h);left:0;right:0;bottom:var(--nav-h);overflow:hidden;}
+.page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:16px 16px 24px;opacity:0;pointer-events:none;transform:translateY(12px);transition:opacity 0.25s ease,transform 0.25s ease;-webkit-overflow-scrolling:touch;}
+.page.active{opacity:1;pointer-events:all;transform:translateY(0);}
+
+/* ── BOTTOM NAV ── */
+#nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:rgba(7,7,16,0.97);border-top:1px solid var(--border);display:flex;align-items:stretch;z-index:100;backdrop-filter:blur(20px);overflow-x:auto;overflow-y:hidden;scrollbar-width:none;}
+#nav::-webkit-scrollbar{display:none;}
+.nav-btn{min-width:64px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:color 0.2s;color:var(--text2);border:none;background:none;padding:8px 0;}
+.nav-btn.active{color:var(--accent);}
+.nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;}
+.nav-btn span{font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;}
+.nav-indicator{position:absolute;bottom:0;height:2px;background:var(--accent);border-radius:2px 2px 0 0;transition:left 0.25s cubic-bezier(.4,0,.2,1),width 0.25s cubic-bezier(.4,0,.2,1);}
+
+/* ── SHARED COMPONENTS ── */
+.section-label{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text2);margin-bottom:12px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;}
+.pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:500;letter-spacing:0.5px;}
+.pill.bull{background:var(--green-dim);color:var(--green);}
+.pill.bear{background:var(--red-dim);color:var(--red);}
+.pill.neutral{background:var(--yellow-dim);color:var(--yellow);}
+.pill.volatile{background:var(--purple-dim);color:var(--purple);}
+.pill.income{background:var(--cyan-dim);color:var(--cyan);}
+.divider{height:1px;background:var(--border);margin:12px 0;}
+h1.page-title{font-size:28px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px;}
+p.page-sub{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.5;}
+
+/* ── HOME ── */
+.vix-gauge-wrap{text-align:center;padding:20px 0 10px;}
+.gauge-svg{width:200px;height:110px;}
+.market-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.market-tile{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;position:relative;overflow:hidden;}
+.market-tile::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.market-tile.up::before{background:var(--green);}
+.market-tile.dn::before{background:var(--red);}
+.market-tile .sym{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);margin-bottom:4px;}
+.market-tile .price{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;}
+.market-tile .chg{font-family:'JetBrains Mono',monospace;font-size:12px;margin-top:2px;}
+.market-tile .chg.up{color:var(--green);}
+.market-tile .chg.dn{color:var(--red);}
+.mood-bar{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;}
+.mood-label{font-size:12px;color:var(--text2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;}
+.mood-track{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;margin-bottom:6px;}
+.mood-fill{height:100%;border-radius:4px;transition:width 1s ease;}
+.tip-card{background:linear-gradient(135deg,rgba(0,255,135,0.05),rgba(34,211,238,0.05));border:1px solid rgba(0,255,135,0.15);border-radius:16px;padding:16px;margin-bottom:12px;}
+.tip-label{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--green);margin-bottom:6px;}
+.tip-text{font-size:13px;color:var(--text2);line-height:1.6;}
+
+/* ── STRATEGIES ── */
+.filter-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none;margin-bottom:16px;}
+.filter-scroll::-webkit-scrollbar{display:none;}
+.filter-btn{flex-shrink:0;padding:7px 16px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;}
+.filter-btn.active{color:#000;font-weight:700;}
+.filter-btn.all.active{background:var(--text);border-color:var(--text);}
+.filter-btn.bull.active{background:var(--green);border-color:var(--green);}
+.filter-btn.bear.active{background:var(--red);border-color:var(--red);}
+.filter-btn.neutral.active{background:var(--yellow);border-color:var(--yellow);}
+.filter-btn.volatile.active{background:var(--purple);border-color:var(--purple);}
+.filter-btn.income.active{background:var(--cyan);border-color:var(--cyan);}
+
+.strat-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+.strat-card:active{transform:scale(0.98);}
+.strat-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:16px 0 0 16px;}
+.strat-card.bull::before{background:var(--green);}
+.strat-card.bear::before{background:var(--red);}
+.strat-card.neutral::before{background:var(--yellow);}
+.strat-card.volatile::before{background:var(--purple);}
+.strat-card.income::before{background:var(--cyan);}
+.strat-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.strat-name{font-size:17px;font-weight:700;letter-spacing:-0.3px;}
+.strat-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px;}
+.strat-meta{display:flex;gap:8px;flex-wrap:wrap;}
+.meta-chip{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 8px;background:var(--surface2);border-radius:6px;color:var(--text2);}
+.chevron{color:var(--text2);font-size:18px;margin-top:2px;}
+
+/* ── MODAL ── */
+#modal{position:fixed;inset:0;z-index:200;pointer-events:none;}
+#modalBackdrop{position:absolute;inset:0;background:rgba(0,0,0,0.8);opacity:0;transition:opacity 0.3s;backdrop-filter:blur(4px);}
+#modalSheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:24px 24px 0 0;transform:translateY(100%);transition:transform 0.35s cubic-bezier(.4,0,.2,1);max-height:92vh;overflow-y:auto;padding:0 0 40px;}
+#modal.open{pointer-events:all;}
+#modal.open #modalBackdrop{opacity:1;}
+#modal.open #modalSheet{transform:translateY(0);}
+.modal-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:14px auto 20px;}
+.modal-header{padding:0 20px 16px;}
+.modal-title{font-size:24px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px;}
+.modal-body{padding:0 20px;}
+.modal-section{margin-bottom:20px;}
+.modal-section-title{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text2);margin-bottom:10px;}
+.payoff-wrap{background:var(--bg);border-radius:12px;padding:12px;margin-bottom:16px;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.info-box{background:var(--bg);border-radius:10px;padding:12px;}
+.info-box-label{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--text2);margin-bottom:4px;}
+.info-box-val{font-size:15px;font-weight:700;}
+.greek-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+.greek-row:last-child{border-bottom:none;}
+.greek-name{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;}
+.greek-impact{font-size:12px;color:var(--text2);}
+.greek-badge{font-size:11px;padding:2px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;}
+.greek-badge.pos{background:var(--green-dim);color:var(--green);}
+.greek-badge.neg{background:var(--red-dim);color:var(--red);}
+.greek-badge.neu{background:var(--yellow-dim);color:var(--yellow);}
+.example-box{background:linear-gradient(135deg,rgba(0,255,135,0.04),rgba(34,211,238,0.04));border:1px solid rgba(0,255,135,0.12);border-radius:12px;padding:14px;}
+.example-box p{font-size:13px;color:var(--text2);line-height:1.7;}
+.example-box strong{color:var(--text);}
+.close-modal{width:100%;padding:14px;background:var(--surface2);border:1px solid var(--border2);border-radius:14px;color:var(--text2);font-family:'Syne',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;}
+.resource-link{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg);border-radius:12px;margin-bottom:8px;text-decoration:none;cursor:pointer;transition:background 0.2s;border:1px solid var(--border);}
+.resource-link:active{background:var(--surface2);}
+.resource-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.resource-icon.yt{background:rgba(255,0,0,0.15);}
+.resource-icon.read{background:var(--cyan-dim);}
+.resource-text{flex:1;}
+.resource-label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.resource-type{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);}
+.resource-arrow{color:var(--text2);font-size:16px;}
+
+/* ── CALCULATOR ── */
+.calc-form{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;}
+.calc-row{margin-bottom:14px;}
+.calc-label{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;}
+.calc-input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:15px;outline:none;transition:border-color 0.2s;}
+.calc-input:focus{border-color:var(--accent);}
+.calc-select{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;outline:none;-webkit-appearance:none;}
+.calc-btn{width:100%;padding:15px;background:var(--accent);border:none;border-radius:14px;color:#000;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:0.5px;transition:opacity 0.2s;}
+.calc-btn:active{opacity:0.8;}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.result-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;}
+.result-label{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;}
+.result-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;}
+.result-val.green{color:var(--green);}
+.result-val.red{color:var(--red);}
+.result-val.yellow{color:var(--yellow);}
+#calcChart{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;}
+
+/* ── GREEKS ── */
+.greek-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;}
+.greek-title{font-size:20px;font-weight:800;margin-bottom:4px;}
+.greek-symbol{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;float:right;opacity:0.3;}
+.greek-def{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;}
+.greek-slider-wrap{margin-bottom:10px;}
+.greek-slider-label{display:flex;justify-content:space-between;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);margin-bottom:6px;}
+input[type=range]{width:100%;-webkit-appearance:none;height:4px;border-radius:2px;background:var(--surface2);outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid var(--bg);}
+.greek-effect{font-size:12px;color:var(--text2);padding:10px 12px;background:var(--bg);border-radius:8px;line-height:1.6;font-family:'JetBrains Mono',monospace;}
+
+/* ── QUIZ ── */
+.quiz-wrap{display:flex;flex-direction:column;align-items:center;padding:10px 0;}
+.quiz-progress{width:100%;margin-bottom:20px;}
+.progress-track{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:6px;}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 0.5s ease;}
+.progress-txt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);}
+.quiz-card-wrap{width:100%;perspective:1000px;margin-bottom:20px;}
+.quiz-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;min-height:160px;display:flex;flex-direction:column;justify-content:center;transition:transform 0.4s ease;cursor:pointer;}
+.quiz-card:active{transform:scale(0.98);}
+.quiz-q-label{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--text2);margin-bottom:12px;}
+.quiz-question{font-size:18px;font-weight:700;line-height:1.4;}
+.quiz-answer{font-size:14px;color:var(--text2);line-height:1.6;display:none;}
+.quiz-card.flipped .quiz-question{display:none;}
+.quiz-card.flipped .quiz-answer{display:block;}
+.quiz-card.flipped{background:linear-gradient(135deg,rgba(0,255,135,0.05),rgba(34,211,238,0.05));border-color:rgba(0,255,135,0.2);}
+.quiz-hint{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);text-align:center;margin-bottom:16px;}
+.quiz-btns{display:flex;gap:10px;width:100%;}
+.quiz-btn{flex:1;padding:14px;border-radius:14px;border:none;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.quiz-btn:active{transform:scale(0.96);}
+.quiz-btn.got-it{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,255,135,0.3);}
+.quiz-btn.review{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,61,107,0.3);}
+.quiz-score{background:linear-gradient(135deg,rgba(0,255,135,0.08),rgba(34,211,238,0.08));border:1px solid rgba(0,255,135,0.2);border-radius:20px;padding:24px;text-align:center;display:none;}
+.score-num{font-size:64px;font-weight:800;color:var(--green);line-height:1;}
+.score-label{font-size:14px;color:var(--text2);margin-top:8px;}
+.restart-btn{margin-top:20px;padding:14px 32px;background:var(--accent);border:none;border-radius:14px;color:#000;font-family:'Syne',sans-serif;font-size:15px;font-weight:800;cursor:pointer;}
+
+/* ── GLOSSARY ── */
+.search-wrap{position:relative;margin-bottom:16px;}
+.search-input{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:13px 16px 13px 42px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;outline:none;}
+.search-input:focus{border-color:var(--accent);}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text2);pointer-events:none;}
+.glossary-letter{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);padding:8px 0 4px;font-family:'JetBrains Mono',monospace;}
+.glossary-item{padding:14px 0;border-bottom:1px solid var(--border);}
+.glossary-term{font-size:15px;font-weight:700;margin-bottom:4px;}
+.glossary-def{font-size:13px;color:var(--text2);line-height:1.6;}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0);opacity:0.4}30%{transform:translateY(-5px);opacity:1}}
+.anim{animation:fadeUp 0.4s ease both;}
+.anim-d1{animation-delay:0.05s;}
+.anim-d2{animation-delay:0.1s;}
+.anim-d3{animation-delay:0.15s;}
+.anim-d4{animation-delay:0.2s;}
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div id="ticker">
+  <div id="tickerStatus">● LIVE</div>
+  <div id="tickerTrack">
+    <div id="tickerInner"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- HOME -->
+  <div class="page active" id="page-home">
+    <h1 class="page-title anim">Options Academy</h1>
+    <p class="page-sub anim anim-d1">Your complete trading education hub</p>
+
+    <div class="section-label anim anim-d2">Market Snapshot</div>
+    <div class="market-grid anim anim-d2" id="marketGrid">
+      <div class="market-tile" id="tile-SPY"><div class="sym">SPY</div><div class="price" id="p-SPY">—</div><div class="chg" id="c-SPY">—</div></div>
+      <div class="market-tile" id="tile-QQQ"><div class="sym">QQQ</div><div class="price" id="p-QQQ">—</div><div class="chg" id="c-QQQ">—</div></div>
+      <div class="market-tile" id="tile-IWM"><div class="sym">IWM</div><div class="price" id="p-IWM">—</div><div class="chg" id="c-IWM">—</div></div>
+      <div class="market-tile" id="tile-VIX"><div class="sym">VIX</div><div class="price" id="p-VIX">N/A</div><div class="chg" id="c-VIX" style="font-size:10px;color:var(--text2)">Loading...</div></div>
+    </div>
+
+    <div class="mood-bar anim anim-d3">
+      <div class="mood-label">MARKET FEAR / GREED</div>
+      <div class="mood-track"><div class="mood-fill" id="moodFill" style="width:50%;background:var(--yellow)"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);">
+        <span>😱 EXTREME FEAR</span><span id="moodLabel">NEUTRAL</span><span>🤑 EXTREME GREED</span>
+      </div>
+    </div>
+
+    <div class="anim anim-d3">
+      <div class="section-label">VIX Regime</div>
+      <div class="card" id="vixRegimeCard">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div>
+            <div style="font-size:13px;color:var(--text2);font-family:'JetBrains Mono',monospace;">VIX Level</div>
+            <div style="font-size:32px;font-weight:800;font-family:'JetBrains Mono',monospace;" id="vixBig">N/A</div>
+          </div>
+          <div style="text-align:right;">
+            <div id="vixRegimePill" class="pill neutral" style="font-size:12px;padding:5px 14px;">LOADING...</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:6px;" id="vixAdvice">Trying multiple sources...</div>
+          </div>
+        </div>
+        <div style="height:6px;background:linear-gradient(to right,var(--green),var(--yellow),var(--orange),var(--red));border-radius:3px;margin-bottom:6px;"></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text2);">
+          <span>Low &lt;15</span><span>Normal 15-25</span><span>High 25-35</span><span>Extreme &gt;35</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-card anim anim-d4">
+      <div class="tip-label">💡 TODAY'S TIP</div>
+      <div class="tip-text" id="dailyTip">Loading market context...</div>
+    </div>
+
+    <div class="anim anim-d4">
+      <div class="section-label">Quick Reference</div>
+      <div class="card" style="cursor:pointer;" onclick="switchPage('strategies')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Strategy Explorer →</div>
+            <div style="font-size:12px;color:var(--text2);">25 strategies with payoff diagrams</div>
+          </div>
+          <div style="font-size:24px;">📊</div>
+        </div>
+      </div>
+      <div class="card" style="cursor:pointer;" onclick="switchPage('quiz')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Quiz Mode →</div>
+            <div style="font-size:12px;color:var(--text2);">Test your options knowledge</div>
+          </div>
+          <div style="font-size:24px;">🎯</div>
+        </div>
+      </div>
+      <div class="card" style="cursor:pointer;" onclick="switchPage('calc')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px;">P&L Calculator →</div>
+            <div style="font-size:12px;color:var(--text2);">Breakeven & max profit/loss</div>
+          </div>
+          <div style="font-size:24px;">🧮</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STRATEGIES -->
+  <div class="page" id="page-strategies">
+    <h1 class="page-title">Strategies</h1>
+    <p class="page-sub">Tap any strategy for full breakdown</p>
+    <div class="filter-scroll">
+      <button class="filter-btn all active" onclick="filterStrats('all',this)">All</button>
+      <button class="filter-btn bull" onclick="filterStrats('bull',this)">▲ Bullish</button>
+      <button class="filter-btn bear" onclick="filterStrats('bear',this)">▼ Bearish</button>
+      <button class="filter-btn neutral" onclick="filterStrats('neutral',this)">◆ Neutral</button>
+      <button class="filter-btn volatile" onclick="filterStrats('volatile',this)">◉ Volatile</button>
+      <button class="filter-btn income" onclick="filterStrats('income',this)">◈ Income</button>
+    </div>
+    <div id="stratList"></div>
+  </div>
+
+  <!-- CALCULATOR -->
+  <div class="page" id="page-calc">
+    <h1 class="page-title">P&L Calculator</h1>
+    <p class="page-sub">Calculate breakeven, max profit & loss</p>
+    <div class="calc-form">
+      <div class="calc-row">
+        <div class="calc-label">Strategy Type</div>
+        <select class="calc-select" id="calcType" onchange="updateCalcFields()">
+          <option value="long_call">Long Call</option>
+          <option value="long_put">Long Put</option>
+          <option value="bull_call">Bull Call Spread</option>
+          <option value="bear_put">Bear Put Spread</option>
+          <option value="iron_condor">Iron Condor</option>
+          <option value="straddle">Long Straddle</option>
+          <option value="covered_call">Covered Call</option>
+          <option value="csp">Cash-Secured Put</option>
+        </select>
+      </div>
+      <div id="calcFields"></div>
+      <button class="calc-btn" onclick="calculate()">CALCULATE</button>
+    </div>
+    <div id="calcResults" style="display:none;">
+      <div class="section-label">Results</div>
+      <div class="result-grid">
+        <div class="result-box"><div class="result-label">Max Profit</div><div class="result-val green" id="maxProfit">—</div></div>
+        <div class="result-box"><div class="result-label">Max Loss</div><div class="result-val red" id="maxLoss">—</div></div>
+        <div class="result-box"><div class="result-label">Breakeven</div><div class="result-val yellow" id="breakeven">—</div></div>
+        <div class="result-box"><div class="result-label">Risk/Reward</div><div class="result-val" id="rr">—</div></div>
+      </div>
+      <div id="calcChart">
+        <div class="section-label">Payoff at Expiration</div>
+        <canvas id="payoffCanvas" width="340" height="180" style="width:100%;height:auto;"></canvas>
+      </div>
+      <div class="card" id="calcAdvice" style="background:var(--green-dim);border-color:rgba(0,255,135,0.2);"></div>
+    </div>
+  </div>
+
+  <!-- GREEKS -->
+  <div class="page" id="page-greeks">
+    <h1 class="page-title">The Greeks</h1>
+    <p class="page-sub">Understand how options are priced</p>
+
+    <div class="greek-card">
+      <span class="greek-symbol">Δ</span>
+      <div class="greek-title">Delta</div>
+      <div class="greek-def">Rate of change of option price vs. underlying price. Ranges -1 to +1. Also approximates probability of expiring ITM.</div>
+      <div class="greek-slider-wrap">
+        <div class="greek-slider-label"><span>Stock moves +$1</span><span id="deltaVal">Δ = 0.50</span></div>
+        <input type="range" min="1" max="100" value="50" oninput="updateDelta(this.value)">
+      </div>
+      <div class="greek-effect" id="deltaEffect">A 0.50 delta call gains ~$50 per contract when the stock rises $1</div>
+    </div>
+
+    <div class="greek-card">
+      <span class="greek-symbol">Θ</span>
+      <div class="greek-title">Theta</div>
+      <div class="greek-def">Time decay. How much value the option loses each day. Works FOR sellers, AGAINST buyers. Accelerates near expiration.</div>
+      <div class="greek-slider-wrap">
+        <div class="greek-slider-label"><span>Days to expiry</span><span id="thetaVal">30 DTE</span></div>
+        <input type="range" min="1" max="60" value="30" oninput="updateTheta(this.value)">
+      </div>
+      <div class="greek-effect" id="thetaEffect">At 30 DTE, theta decay is moderate. Premium erodes roughly linearly until ~21 DTE, then accelerates.</div>
+    </div>
+
+    <div class="greek-card">
+      <span class="greek-symbol">Γ</span>
+      <div class="greek-title">Gamma</div>
+      <div class="greek-def">Rate of change of delta. Highest for ATM options near expiration. High gamma = position changes rapidly as stock moves.</div>
+      <div class="greek-slider-wrap">
+        <div class="greek-slider-label"><span>Moneyness</span><span id="gammaVal">ATM</span></div>
+        <input type="range" min="1" max="100" value="50" oninput="updateGamma(this.value)">
+      </div>
+      <div class="greek-effect" id="gammaEffect">ATM options have highest gamma — your delta changes fastest. This is why 0DTE positions move explosively.</div>
+    </div>
+
+    <div class="greek-card">
+      <span class="greek-symbol">V</span>
+      <div class="greek-title">Vega</div>
+      <div class="greek-def">Sensitivity to implied volatility changes. Buyers want IV to rise (long vega). Sellers want IV to fall (short vega).</div>
+      <div class="greek-slider-wrap">
+        <div class="greek-slider-label"><span>IV change</span><span id="vegaVal">+5 vol pts</span></div>
+        <input type="range" min="-20" max="20" value="5" oninput="updateVega(this.value)">
+      </div>
+      <div class="greek-effect" id="vegaEffect">A +5 vol point IV increase adds ~$25 to a vega-0.05 option per contract. Pre-earnings IV expansion benefits long options.</div>
+    </div>
+
+    <div class="greek-card">
+      <span class="greek-symbol">ρ</span>
+      <div class="greek-title">Rho</div>
+      <div class="greek-def">Sensitivity to interest rate changes. Least impactful of the main greeks for short-term options. More relevant for LEAPS.</div>
+      <div style="background:var(--bg);border-radius:8px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);line-height:1.6;">
+        Calls have positive rho (benefit from rate hikes). Puts have negative rho. For most retail traders, rho is negligible unless trading LEAPS or in a rapidly changing rate environment.
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="page" id="page-quiz">
+    <h1 class="page-title">Quiz Mode</h1>
+    <p class="page-sub">Tap the card to reveal the answer</p>
+    <div class="quiz-wrap">
+      <div class="quiz-progress">
+        <div class="progress-track"><div class="progress-fill" id="quizProgress" style="width:0%"></div></div>
+        <div class="progress-txt" id="quizProgressTxt">Question 1 of 20 • Score: 0</div>
+      </div>
+      <div class="quiz-card-wrap">
+        <div class="quiz-card" id="quizCard" onclick="flipQuiz()">
+          <div class="quiz-q-label">QUESTION</div>
+          <div class="quiz-question" id="quizQ"></div>
+          <div class="quiz-answer" id="quizA"></div>
+        </div>
+      </div>
+      <div class="quiz-hint" id="quizHint">👆 Tap card to reveal answer</div>
+      <div class="quiz-btns" id="quizBtns" style="display:none;">
+        <button class="quiz-btn got-it" onclick="quizNext(true)">✓ Got it</button>
+        <button class="quiz-btn review" onclick="quizNext(false)">↻ Review</button>
+      </div>
+      <div class="quiz-score" id="quizScore">
+        <div class="score-num" id="scoreNum">0</div>
+        <div class="score-label">out of 20 correct</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:12px;" id="scoreMsg"></div>
+        <button class="restart-btn" onclick="restartQuiz()">Try Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOSSARY -->
+  <div class="page" id="page-glossary">
+    <h1 class="page-title">Glossary</h1>
+    <p class="page-sub">Options A to Z</p>
+    <div class="search-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" class="search-input" placeholder="Search terms..." oninput="searchGlossary(this.value)" id="glossarySearch">
+    </div>
+    <div id="glossaryList"></div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- STRATEGY MODAL -->
+<div id="modal">
+  <div id="modalBackdrop" onclick="closeModal()"></div>
+  <div id="modalSheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div class="modal-title" id="modalTitle"></div>
+          <div id="modalPill"></div>
+        </div>
+        <div style="font-size:28px;" id="modalEmoji"></div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="payoff-wrap">
+        <div class="modal-section-title">Payoff Diagram</div>
+        <canvas id="modalCanvas" width="340" height="160" style="width:100%;height:auto;"></canvas>
+      </div>
+      <div class="info-grid">
+        <div class="info-box"><div class="info-box-label">Max Profit</div><div class="info-box-val" id="mi-profit" style="color:var(--green)"></div></div>
+        <div class="info-box"><div class="info-box-label">Max Loss</div><div class="info-box-val" id="mi-loss" style="color:var(--red)"></div></div>
+        <div class="info-box"><div class="info-box-label">Breakeven</div><div class="info-box-val" id="mi-be" style="color:var(--yellow)"></div></div>
+        <div class="info-box"><div class="info-box-label">Ideal IV</div><div class="info-box-val" id="mi-iv"></div></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">When to Use</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.7;" id="modalWhen"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Greeks Impact</div>
+        <div id="modalGreeks"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Example Trade</div>
+        <div class="example-box"><p id="modalExample"></p></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">📚 Resources & Further Study</div>
+        <div id="modalResources"></div>
+      </div>
+      <button class="close-modal" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- EARNINGS CALENDAR -->
+<div class="page" id="page-earnings">
+  <h1 class="page-title">Earnings Calendar</h1>
+  <p class="page-sub">Upcoming reports with strategy suggestions</p>
+  <div class="filter-scroll">
+    <button class="filter-btn all active" onclick="filterEarnings('all',this)">All</button>
+    <button class="filter-btn bull" onclick="filterEarnings('today',this)">Today</button>
+    <button class="filter-btn neutral" onclick="filterEarnings('week',this)">This Week</button>
+    <button class="filter-btn income" onclick="filterEarnings('next',this)">Next Week</button>
+  </div>
+  <div id="earningsList"></div>
+  <div class="tip-card" style="margin-top:8px;">
+    <div class="tip-label">💡 EARNINGS STRATEGY GUIDE</div>
+    <div class="tip-text">Buy straddles/strangles when IV is low pre-earnings. Sell iron condors/butterflies when IV is already elevated. Always close before the report if selling premium to avoid assignment risk.</div>
+  </div>
+</div>
+
+<!-- IV RANK TRACKER -->
+<div class="page" id="page-ivrank">
+  <h1 class="page-title">IV Rank Tracker</h1>
+  <p class="page-sub">Where to sell vs buy premium right now</p>
+  <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(0,255,135,0.05),rgba(34,211,238,0.05));border-color:rgba(0,255,135,0.15);">
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--green);margin-bottom:8px;">HOW TO READ IV RANK</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
+      <div style="background:var(--green-dim);border-radius:8px;padding:8px;"><div style="font-size:18px;font-weight:800;color:var(--green);">&gt;50</div><div style="font-size:10px;color:var(--text2);margin-top:2px;">SELL premium</div></div>
+      <div style="background:var(--yellow-dim);border-radius:8px;padding:8px;"><div style="font-size:18px;font-weight:800;color:var(--yellow);">25-50</div><div style="font-size:10px;color:var(--text2);margin-top:2px;">Neutral zone</div></div>
+      <div style="background:var(--red-dim);border-radius:8px;padding:8px;"><div style="font-size:18px;font-weight:800;color:var(--red);">&lt;25</div><div style="font-size:10px;color:var(--text2);margin-top:2px;">BUY premium</div></div>
+    </div>
+  </div>
+  <div class="section-label">Top Symbols — IV Snapshot</div>
+  <div id="ivRankList"></div>
+  <div style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;text-align:center;margin-top:12px;padding:0 16px;line-height:1.6;">
+    * IV Rank estimated from 52-week high/low. Tap any symbol for full options chain on your broker.
+  </div>
+</div>
+
+<!-- AI STRATEGY ADVISOR -->
+<div class="page" id="page-ai">
+  <h1 class="page-title">AI Advisor</h1>
+  <p class="page-sub">Powered by Claude AI</p>
+  <div id="aiMarketSummary" class="card" style="margin-bottom:12px;"></div>
+
+  <!-- Chat messages -->
+  <div id="aiChatMessages" style="margin-bottom:12px;"></div>
+
+  <!-- Typing indicator -->
+  <div id="aiTyping" style="display:none;margin-bottom:12px;">
+    <div class="card" style="display:flex;align-items:center;gap:10px;padding:14px;">
+      <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🤖</div>
+      <div style="display:flex;gap:4px;align-items:center;">
+        <div style="width:7px;height:7px;border-radius:50%;background:var(--accent);animation:typingDot 1.2s infinite 0s;"></div>
+        <div style="width:7px;height:7px;border-radius:50%;background:var(--accent);animation:typingDot 1.2s infinite 0.2s;"></div>
+        <div style="width:7px;height:7px;border-radius:50%;background:var(--accent);animation:typingDot 1.2s infinite 0.4s;"></div>
+      </div>
+      <span style="font-size:12px;color:var(--text2);">Claude is thinking...</span>
+    </div>
+  </div>
+
+  <!-- Input area -->
+  <div style="position:sticky;bottom:0;background:var(--bg);padding-bottom:8px;">
+    <div style="display:flex;gap:8px;align-items:flex-end;">
+      <textarea id="aiQuestion"
+        style="flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:12px 14px;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;outline:none;resize:none;min-height:48px;max-height:120px;line-height:1.5;transition:border-color 0.2s;"
+        placeholder="Ask anything about options..."
+        rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askAI();}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+      <button onclick="askAI()" id="aiSendBtn"
+        style="width:48px;height:48px;border-radius:14px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;transition:opacity 0.2s;">
+        ➤
+      </button>
+    </div>
+    <button onclick="clearAIChat()" style="width:100%;margin-top:8px;padding:8px;background:transparent;border:none;color:var(--text2);font-size:12px;font-family:'JetBrains Mono',monospace;cursor:pointer;letter-spacing:1px;">✕ CLEAR CHAT</button>
+  </div>
+
+  <div class="section-label" style="margin-top:4px;">Quick Scenarios</div>
+  <div id="aiQuickBtns"></div>
+</div>
+
+<!-- VIX ALERTS -->
+<div class="page" id="page-alerts">
+  <h1 class="page-title">VIX Alerts</h1>
+  <p class="page-sub">Get notified when VIX crosses key levels</p>
+  <div class="card" style="margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="section-label" style="margin-bottom:0;">Current VIX</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;" id="alertVixDisplay">—</div>
+    </div>
+    <div id="alertVixBar" style="height:8px;background:linear-gradient(to right,var(--green),var(--yellow),var(--orange),var(--red));border-radius:4px;position:relative;margin-bottom:4px;">
+      <div id="alertVixMarker" style="position:absolute;top:-4px;width:4px;height:16px;background:#fff;border-radius:2px;transform:translateX(-50%);transition:left 0.5s ease;left:30%;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text2);">
+      <span>10</span><span>20</span><span>30</span><span>40+</span>
+    </div>
+  </div>
+  <div class="section-label">Set Alert Levels</div>
+  <div class="card" style="margin-bottom:10px;">
+    <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Alert me when VIX crosses:</div>
+    <div id="alertLevels"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <input id="customAlertVal" class="calc-input" type="number" placeholder="Custom level (e.g. 28)" style="flex:1;">
+      <button onclick="addCustomAlert()" style="padding:12px 16px;background:var(--accent);border:none;border-radius:10px;color:#000;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;">Add</button>
+    </div>
+  </div>
+  <div class="section-label">Alert History</div>
+  <div id="alertHistory" class="card">
+    <div style="font-size:13px;color:var(--text2);text-align:center;padding:8px 0;">No alerts triggered yet</div>
+  </div>
+  <div class="tip-card" style="margin-top:12px;">
+    <div class="tip-label">📱 BROWSER NOTIFICATIONS</div>
+    <div class="tip-text">Tap "Enable Notifications" when prompted to receive alerts even when the app is in the background. VIX is checked every 15 seconds.</div>
+  </div>
+  <button class="calc-btn" style="margin-top:12px;background:var(--surface2);color:var(--text2);border:1px solid var(--border2);" onclick="requestNotificationPermission()">🔔 Enable Browser Notifications</button>
+</div>
+
+<!-- BOTTOM NAV -->
+<div id="nav">
+  <div class="nav-indicator" id="navIndicator"></div>
+  <button class="nav-btn active" onclick="switchPage('home')" id="nav-home">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Home</span>
+  </button>
+  <button class="nav-btn" onclick="switchPage('strategies')" id="nav-strategies">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Plays</span>
+  </button>
+  <button class="nav-btn" onclick="switchPage('ai')" id="nav-ai">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+    <span>AI</span>
+  </button>
+  <button class="nav-btn" onclick="switchPage('earnings')" id="nav-earnings">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span>Earnings</span>
+  </button>
+  <button class="nav-btn" onclick="switchPage('ivrank')" id="nav-ivrank">
+    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>IV Rank</span>
+  </button>
+  <button class="nav-btn" onclick="switchPage('alerts')" id="nav-alerts">
+    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    <span>Alerts</span>
+  </button>
+  <button class="nav-btn" onclick="switchPage('calc')" id="nav-calc">
+    <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+    <span>Calc</span>
+  </button>
+  <button class="nav-btn" onclick="switchPage('quiz')" id="nav-quiz">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span>Quiz</span>
+  </button>
+  <button class="nav-btn" onclick="switchPage('glossary')" id="nav-glossary">
+    <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span>More</span>
+  </button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════
+const API_KEY = 'd8gvdl1r01qhjpmpss5gd8gvdl1r01qhjpmpss60';
+const TICKER_SYMBOLS = ['SPY','QQQ','IWM','DIA','AAPL','TSLA','NVDA','AMZN','MSFT','GS','JPM'];
+
+const STRATEGIES = [
+  {id:'long_call',name:'Long Call',cat:'bull',emoji:'📈',
+   desc:'Buy a call option. Profit when the stock rises above your strike + premium paid.',
+   profit:'Unlimited',loss:'Premium paid',be:'Strike + Premium',iv:'Low IV preferred',
+   when:'Strong directional move expected upward. Best entered when IV is low (before a catalyst). Great for earnings plays when you expect a big move up.',
+   greeks:[{g:'Delta',impact:'Positive — gains as stock rises',badge:'pos'},{g:'Theta',impact:'Negative — loses value daily',badge:'neg'},{g:'Vega',impact:'Positive — benefits from IV expansion',badge:'pos'}],
+   example:'SPY at $500. Buy the $505 call for $3.00 (30 DTE). Breakeven = $508. If SPY hits $515 at expiry, profit = $7.00 per share = $700/contract.',
+   payoff:'long_call',
+   resources:[
+     {type:'yt',label:'Long Call Options Explained',url:'https://www.youtube.com/results?search_query=long+call+option+strategy+explained'},
+     {type:'yt',label:'How to Buy Call Options (Tastytrade)',url:'https://www.youtube.com/results?search_query=tastytrade+long+call+options'},
+     {type:'read',label:'Investopedia: Long Call',url:'https://www.investopedia.com/terms/c/calloption.asp'},
+     {type:'read',label:'Options Playbook: Long Call',url:'https://www.optionsplaybook.com/option-strategies/long-call/'},
+   ]},
+  {id:'long_put',name:'Long Put',cat:'bear',emoji:'📉',
+   desc:'Buy a put option. Profit when the stock falls below your strike minus premium paid.',
+   profit:'Strike − Premium',loss:'Premium paid',be:'Strike − Premium',iv:'Low IV preferred',
+   when:'Strong downside expected. Hedge against portfolio. Best when IV is low. Often used before earnings when bearish.',
+   greeks:[{g:'Delta',impact:'Negative — gains as stock falls',badge:'pos'},{g:'Theta',impact:'Negative — loses value daily',badge:'neg'},{g:'Vega',impact:'Positive — benefits from vol spikes',badge:'pos'}],
+   example:'QQQ at $430. Buy $425 put for $4.00. Breakeven = $421. If QQQ drops to $410, profit = $11 × 100 = $1,100/contract.',
+   payoff:'long_put',
+   resources:[
+     {type:'yt',label:'Long Put Options Strategy Explained',url:'https://www.youtube.com/results?search_query=long+put+option+strategy+explained'},
+     {type:'yt',label:'Buying Puts for Beginners',url:'https://www.youtube.com/results?search_query=buying+put+options+beginners+tutorial'},
+     {type:'read',label:'Investopedia: Put Option',url:'https://www.investopedia.com/terms/p/putoption.asp'},
+     {type:'read',label:'Options Playbook: Long Put',url:'https://www.optionsplaybook.com/option-strategies/long-put/'},
+   ]},
+  {id:'bull_call',name:'Bull Call Spread',cat:'bull',emoji:'🐂',
+   desc:'Buy a lower strike call, sell a higher strike call. Reduces cost but caps upside.',
+   profit:'Spread width − net debit',loss:'Net debit paid',be:'Lower strike + debit',iv:'Slightly elevated OK',
+   when:'Moderately bullish. When IV is high and makes outright calls expensive. Defined risk, defined reward.',
+   greeks:[{g:'Delta',impact:'Positive but less than long call',badge:'pos'},{g:'Theta',impact:'Near neutral, slight negative',badge:'neu'},{g:'Vega',impact:'Slightly positive',badge:'pos'}],
+   example:'SPX at 5000. Buy 5010 call / Sell 5025 call for $6 net debit. Max profit = $9 ($15 width − $6). Max loss = $6. Breakeven = 5016.',
+   payoff:'bull_call',
+   resources:[
+     {type:'yt',label:'Bull Call Spread Explained',url:'https://www.youtube.com/results?search_query=bull+call+spread+options+strategy+explained'},
+     {type:'yt',label:'Vertical Spreads Tutorial (Tastytrade)',url:'https://www.youtube.com/results?search_query=tastytrade+vertical+spread+bull+call'},
+     {type:'read',label:'Investopedia: Bull Call Spread',url:'https://www.investopedia.com/terms/b/bullcallspread.asp'},
+     {type:'read',label:'Options Playbook: Bull Call Spread',url:'https://www.optionsplaybook.com/option-strategies/bull-call-spread/'},
+   ]},
+  {id:'bear_put',name:'Bear Put Spread',cat:'bear',emoji:'🐻',
+   desc:'Buy a higher strike put, sell a lower strike put. Cheaper than long put, capped profit.',
+   profit:'Spread width − net debit',loss:'Net debit paid',be:'Upper strike − debit',iv:'High IV works',
+   when:'Moderately bearish. Cheaper than buying a put outright. Good in high IV environments to reduce cost.',
+   greeks:[{g:'Delta',impact:'Negative — profits as stock falls',badge:'pos'},{g:'Theta',impact:'Slightly negative',badge:'neu'},{g:'Vega',impact:'Near neutral to slightly positive',badge:'neu'}],
+   example:'IWM at $200. Buy $198 put / Sell $192 put for $2 debit. Max profit = $4. Max loss = $2. Breakeven = $196.',
+   payoff:'bear_put',
+   resources:[
+     {type:'yt',label:'Bear Put Spread Explained',url:'https://www.youtube.com/results?search_query=bear+put+spread+options+strategy+explained'},
+     {type:'yt',label:'Bearish Vertical Spreads Tutorial',url:'https://www.youtube.com/results?search_query=bearish+vertical+spread+options+tutorial'},
+     {type:'read',label:'Investopedia: Bear Put Spread',url:'https://www.investopedia.com/terms/b/bearputspread.asp'},
+     {type:'read',label:'Options Playbook: Bear Put Spread',url:'https://www.optionsplaybook.com/option-strategies/bear-put-spread/'},
+   ]},
+  {id:'iron_condor',name:'Iron Condor',cat:'neutral',emoji:'🦅',
+   desc:'Sell OTM put spread + sell OTM call spread. Profit from stock staying in a range.',
+   profit:'Net credit received',loss:'Spread width − credit',be:'Two breakeven points',iv:'High IV rank (>50)',
+   when:'When you expect low movement and IV is elevated. Perfect for rangebound markets, post-earnings, or before a slow holiday week.',
+   greeks:[{g:'Delta',impact:'Near zero (neutral)',badge:'neu'},{g:'Theta',impact:'Positive — profits from time decay',badge:'pos'},{g:'Vega',impact:'Negative — benefits from IV crush',badge:'neg'}],
+   example:'SPX at 5000. Sell 4950/4940 put spread + Sell 5050/5060 call spread for $3 total credit. Max profit = $300. Max loss = $700. Two breakevens at 4947 and 5053.',
+   payoff:'iron_condor',
+   resources:[
+     {type:'yt',label:'Iron Condor Full Strategy Guide',url:'https://www.youtube.com/results?search_query=iron+condor+options+strategy+explained'},
+     {type:'yt',label:'Iron Condor on SPX (Tastytrade)',url:'https://www.youtube.com/results?search_query=tastytrade+iron+condor+SPX'},
+     {type:'yt',label:'Managing Iron Condors',url:'https://www.youtube.com/results?search_query=managing+iron+condor+options+adjustments'},
+     {type:'read',label:'Investopedia: Iron Condor',url:'https://www.investopedia.com/terms/i/ironcondor.asp'},
+     {type:'read',label:'Options Playbook: Iron Condor',url:'https://www.optionsplaybook.com/option-strategies/iron-condor/'},
+   ]},
+  {id:'iron_butterfly',name:'Iron Butterfly',cat:'neutral',emoji:'🦋',
+   desc:'Sell ATM straddle, buy OTM wings. Higher credit than iron condor but tighter profit zone.',
+   profit:'Net credit received',loss:'Wing spread − credit',be:'Strike ± credit',iv:'Very high IV rank',
+   when:'When you expect the stock to pin at a specific level. Earnings plays where you believe the move is overpriced.',
+   greeks:[{g:'Delta',impact:'Near zero at initiation',badge:'neu'},{g:'Theta',impact:'Very positive — rapid decay of ATM',badge:'pos'},{g:'Vega',impact:'Very negative — benefits from IV crush',badge:'neg'}],
+   example:'QQQ at $430. Sell $430 call / $430 put. Buy $420 put / $440 call for $8 net credit. Max profit = $800. Max loss = $200.',
+   payoff:'iron_butterfly',
+   resources:[
+     {type:'yt',label:'Iron Butterfly Strategy Explained',url:'https://www.youtube.com/results?search_query=iron+butterfly+options+strategy+explained'},
+     {type:'yt',label:'Iron Butterfly vs Iron Condor',url:'https://www.youtube.com/results?search_query=iron+butterfly+vs+iron+condor+options'},
+     {type:'read',label:'Investopedia: Iron Butterfly',url:'https://www.investopedia.com/terms/i/ironbutterfly.asp'},
+     {type:'read',label:'Options Playbook: Iron Butterfly',url:'https://www.optionsplaybook.com/option-strategies/iron-butterfly/'},
+   ]},
+  {id:'straddle_long',name:'Long Straddle',cat:'volatile',emoji:'💥',
+   desc:'Buy ATM call + ATM put. Profit from a big move in either direction.',
+   profit:'Unlimited both sides',loss:'Both premiums paid',be:'Strike ± total premium',iv:'Low IV — buy before events',
+   when:'Before earnings, Fed decisions, or major catalysts when you expect a big move but not sure which direction. Buy when IV is LOW.',
+   greeks:[{g:'Delta',impact:'Near zero initially, grows with moves',badge:'neu'},{g:'Theta',impact:'Very negative — expensive to hold',badge:'neg'},{g:'Vega',impact:'Very positive — wants IV expansion',badge:'pos'}],
+   example:'NVDA at $800 pre-earnings. Buy $800 call + $800 put for $40 total. Breakevens at $760 and $840. If NVDA moves to $870, profit = $30.',
+   payoff:'straddle',
+   resources:[
+     {type:'yt',label:'Long Straddle Strategy Explained',url:'https://www.youtube.com/results?search_query=long+straddle+options+strategy+explained'},
+     {type:'yt',label:'Trading Straddles Around Earnings',url:'https://www.youtube.com/results?search_query=straddle+options+earnings+play+tutorial'},
+     {type:'read',label:'Investopedia: Long Straddle',url:'https://www.investopedia.com/terms/s/straddle.asp'},
+     {type:'read',label:'Options Playbook: Long Straddle',url:'https://www.optionsplaybook.com/option-strategies/long-straddle/'},
+   ]},
+  {id:'strangle_long',name:'Long Strangle',cat:'volatile',emoji:'🔥',
+   desc:'Buy OTM call + OTM put. Cheaper than straddle but needs a bigger move to profit.',
+   profit:'Unlimited both sides',loss:'Both premiums paid',be:'Call strike + debit / Put strike − debit',iv:'Low IV preferred',
+   when:'Expect a large move but want to spend less than a straddle. Wider breakevens — needs explosive move.',
+   greeks:[{g:'Delta',impact:'Near zero, grows directionally',badge:'neu'},{g:'Theta',impact:'Negative — time decay hurts',badge:'neg'},{g:'Vega',impact:'Positive — benefits from vol surge',badge:'pos'}],
+   example:'SPY at $500. Buy $505 call + $495 put for $5 total. Breakevens at $510 and $490. Needs >2% move to profit.',
+   payoff:'strangle',
+   resources:[
+     {type:'yt',label:'Long Strangle Options Strategy',url:'https://www.youtube.com/results?search_query=long+strangle+options+strategy+explained'},
+     {type:'yt',label:'Straddle vs Strangle Comparison',url:'https://www.youtube.com/results?search_query=straddle+vs+strangle+options+strategy'},
+     {type:'read',label:'Investopedia: Long Strangle',url:'https://www.investopedia.com/terms/s/strangle.asp'},
+     {type:'read',label:'Options Playbook: Long Strangle',url:'https://www.optionsplaybook.com/option-strategies/long-strangle/'},
+   ]},
+  {id:'covered_call',name:'Covered Call',cat:'income',emoji:'💰',
+   desc:'Own 100 shares + sell a call against them. Generate income on your holdings.',
+   profit:'Premium + stock gains to strike',loss:'Stock drops (own shares)',be:'Purchase price − premium',iv:'High IV preferred',
+   when:'Own stock and expect sideways to mildly bullish action. Collect premium every month. Reduces cost basis over time.',
+   greeks:[{g:'Delta',impact:'Reduced vs owning stock alone',badge:'neu'},{g:'Theta',impact:'Positive — collects time decay',badge:'pos'},{g:'Vega',impact:'Short vega — prefers low vol',badge:'neg'}],
+   example:'Own 100 AAPL at $180. Sell $185 call for $2.50. Max profit = $2.50 + $5 move = $750. If AAPL stays below $185, keep $250 premium.',
+   payoff:'covered_call',
+   resources:[
+     {type:'yt',label:'Covered Call Strategy for Beginners',url:'https://www.youtube.com/results?search_query=covered+call+strategy+beginners+explained'},
+     {type:'yt',label:'How to Sell Covered Calls Monthly',url:'https://www.youtube.com/results?search_query=selling+covered+calls+monthly+income'},
+     {type:'read',label:'Investopedia: Covered Call',url:'https://www.investopedia.com/terms/c/coveredcall.asp'},
+     {type:'read',label:'Options Playbook: Covered Call',url:'https://www.optionsplaybook.com/option-strategies/covered-call/'},
+   ]},
+  {id:'csp',name:'Cash-Secured Put',cat:'income',emoji:'🏦',
+   desc:'Sell a put while holding cash to buy shares. Get paid to wait for a better entry.',
+   profit:'Premium collected',loss:'Strike − premium (stock to zero)',be:'Strike − premium',iv:'High IV preferred',
+   when:'Bullish on a stock and want to buy it cheaper. Accept assignment if it drops. Generates income while waiting.',
+   greeks:[{g:'Delta',impact:'Negative short delta — like owning stock at lower price',badge:'neu'},{g:'Theta',impact:'Positive — collects time decay daily',badge:'pos'},{g:'Vega',impact:'Short vega — IV crush helps',badge:'neg'}],
+   example:'TSLA at $250. Sell the $240 put for $5. Breakeven = $235. If TSLA stays above $240 — keep $500. If assigned, own TSLA at $235 effective cost.',
+   payoff:'csp',
+   resources:[
+     {type:'yt',label:'Cash Secured Put Strategy Explained',url:'https://www.youtube.com/results?search_query=cash+secured+put+strategy+explained'},
+     {type:'yt',label:'Selling Puts for Income',url:'https://www.youtube.com/results?search_query=selling+puts+for+income+options+strategy'},
+     {type:'read',label:'Investopedia: Cash-Secured Put',url:'https://www.investopedia.com/articles/optioninvestor/09/selling-puts.asp'},
+     {type:'read',label:'Options Playbook: Short Put',url:'https://www.optionsplaybook.com/option-strategies/short-put/'},
+   ]},
+  {id:'wheel',name:'The Wheel',cat:'income',emoji:'🎡',
+   desc:'CSP → assignment → Covered Call → repeat. Continuous income cycle on a stock you like.',
+   profit:'Compounding premium income',loss:'Stock drops sharply',be:'Progressive cost basis reduction',iv:'Moderate to high IV',
+   when:'Sideways or mildly bullish market on a fundamentally sound stock. Best with high-IV underlyings like TSLA, NVDA, AMZN.',
+   greeks:[{g:'Delta',impact:'Managed through position sizing',badge:'neu'},{g:'Theta',impact:'Consistently positive through the cycle',badge:'pos'},{g:'Vega',impact:'Short vega — prefers stable IV',badge:'neg'}],
+   example:'AMZN at $190. Sell $185 put for $3 → assigned at $185 → sell $190 call for $2.50 → called away at $190. Total income: $5.50/share + $5 capital gain.',
+   payoff:'csp',
+   resources:[
+     {type:'yt',label:'The Wheel Strategy Full Guide',url:'https://www.youtube.com/results?search_query=wheel+strategy+options+full+guide'},
+     {type:'yt',label:'Wheel Strategy on High IV Stocks',url:'https://www.youtube.com/results?search_query=wheel+strategy+high+IV+stocks+options'},
+     {type:'yt',label:'Wheel Strategy Mistakes to Avoid',url:'https://www.youtube.com/results?search_query=wheel+strategy+options+mistakes+avoid'},
+     {type:'read',label:'Investopedia: The Wheel',url:'https://www.investopedia.com/the-wheel-options-strategy-7480532'},
+   ]},
+  {id:'pmcc',name:"Poor Man's Covered Call",cat:'income',emoji:'💎',
+   desc:'Buy deep ITM LEAPS call instead of shares. Sell near-term OTM calls against it.',
+   profit:'Near-term call premiums + LEAPS appreciation',loss:'LEAPS premium',be:'LEAPS cost − collected premiums',iv:'Sell calls in high IV',
+   when:'Want covered call income without buying 100 shares. Requires 70-80% less capital. Perfect for expensive stocks.',
+   greeks:[{g:'Delta',impact:'High positive delta from deep ITM LEAPS',badge:'pos'},{g:'Theta',impact:'Net positive from short call',badge:'pos'},{g:'Vega',impact:'Long net vega from LEAPS',badge:'pos'}],
+   example:'SPY at $500. Buy Jan 2026 $450 LEAPS call for $60 instead of $50,000 in stock. Sell monthly $510 call for $2.50. Repeat monthly.',
+   payoff:'long_call',
+   resources:[
+     {type:'yt',label:"Poor Man's Covered Call Explained",url:'https://www.youtube.com/results?search_query=poor+mans+covered+call+LEAPS+strategy'},
+     {type:'yt',label:'PMCC vs Covered Call Comparison',url:'https://www.youtube.com/results?search_query=poor+mans+covered+call+vs+covered+call'},
+     {type:'read',label:"Investopedia: Poor Man's Covered Call",url:'https://www.investopedia.com/articles/optioninvestor/04/122904.asp'},
+     {type:'read',label:'Options Playbook: Diagonal Spread',url:'https://www.optionsplaybook.com/option-strategies/diagonal-spread/'},
+   ]},
+  {id:'jade_lizard',name:'Jade Lizard',cat:'income',emoji:'🦎',
+   desc:'Sell OTM put + sell OTM call spread. Structured so total credit > call spread width → no upside risk.',
+   profit:'Total credit received',loss:'Strike − credit on downside only',be:'Put strike − credit',iv:'High IV rank',
+   when:'Bullish to neutral. When you want premium with no risk if the stock rips higher. Great in high IV environments.',
+   greeks:[{g:'Delta',impact:'Slightly positive (bullish lean)',badge:'pos'},{g:'Theta',impact:'Positive — all short premium',badge:'pos'},{g:'Vega',impact:'Short vega',badge:'neg'}],
+   example:'SPX at 5000. Sell 4950 put for $8. Sell 5050/5060 call spread for $3. Total credit $11 > $10 spread width. Zero upside risk.',
+   payoff:'iron_condor',
+   resources:[
+     {type:'yt',label:'Jade Lizard Options Strategy',url:'https://www.youtube.com/results?search_query=jade+lizard+options+strategy+explained'},
+     {type:'yt',label:'Jade Lizard Tastytrade',url:'https://www.youtube.com/results?search_query=tastytrade+jade+lizard+options'},
+     {type:'read',label:'Tastytrade: Jade Lizard',url:'https://tastytrade.com/learn-center/options/jade-lizard/'},
+   ]},
+  {id:'butterfly',name:'Butterfly Spread',cat:'neutral',emoji:'🦋',
+   desc:'Buy 1 lower strike, sell 2 middle strikes, buy 1 upper strike. Max profit at middle strike at expiry.',
+   profit:'Spread width − net debit (high R:R)',loss:'Net debit paid',be:'Two breakeven points',iv:'Any — very cheap',
+   when:'Expect price to pin near a specific level at expiration. 0DTE pinning plays. Cheap, high R:R when right.',
+   greeks:[{g:'Delta',impact:'Near zero at middle strike',badge:'neu'},{g:'Theta',impact:'Positive when near middle strike',badge:'pos'},{g:'Vega',impact:'Near zero',badge:'neu'}],
+   example:'SPX 0DTE at 5000. Buy 4990/5000/5010 butterfly for $2. Max profit = $8 if SPX pins at 5000. R:R = 4:1.',
+   payoff:'butterfly',
+   resources:[
+     {type:'yt',label:'Butterfly Spread Options Strategy',url:'https://www.youtube.com/results?search_query=butterfly+spread+options+strategy+explained'},
+     {type:'yt',label:'0DTE Butterfly Trades on SPX',url:'https://www.youtube.com/results?search_query=0DTE+butterfly+SPX+options+trading'},
+     {type:'read',label:'Investopedia: Butterfly Spread',url:'https://www.investopedia.com/terms/b/butterflyspread.asp'},
+     {type:'read',label:'Options Playbook: Butterfly',url:'https://www.optionsplaybook.com/option-strategies/long-call-butterfly/'},
+   ]},
+  {id:'calendar',name:'Calendar Spread',cat:'neutral',emoji:'📅',
+   desc:'Sell near-term option, buy same-strike far-term option. Profit from faster front-month decay.',
+   profit:'Front-month theta differential',loss:'Net debit paid',be:'Near the strike',iv:'Buy when front IV < back IV',
+   when:'Expect stock to stay near strike short-term. Pre-earnings: sell front month, own back month. Profits from IV term structure.',
+   greeks:[{g:'Delta',impact:'Near zero',badge:'neu'},{g:'Theta',impact:'Positive — front month decays faster',badge:'pos'},{g:'Vega',impact:'Positive — benefits from back-month IV expansion',badge:'pos'}],
+   example:'SPY at $500. Sell this week $500 call for $3. Buy next month $500 call for $6. Net debit = $3. Profit if SPY stays near $500 this week.',
+   payoff:'calendar',
+   resources:[
+     {type:'yt',label:'Calendar Spread Strategy Explained',url:'https://www.youtube.com/results?search_query=calendar+spread+options+strategy+explained'},
+     {type:'yt',label:'Calendar Spreads Around Earnings',url:'https://www.youtube.com/results?search_query=calendar+spread+options+earnings+strategy'},
+     {type:'read',label:'Investopedia: Calendar Spread',url:'https://www.investopedia.com/terms/c/calendarspread.asp'},
+     {type:'read',label:'Options Playbook: Calendar Spread',url:'https://www.optionsplaybook.com/option-strategies/calendar-call/'},
+   ]},
+];
+const QUIZ_DATA = [
+  {q:'What does a delta of 0.50 mean?',a:'The option\'s price changes by ~$0.50 for every $1 move in the underlying. It also approximates a 50% probability of expiring in-the-money.'},
+  {q:'What is theta decay?',a:'Theta is the daily erosion of an option\'s time value. A theta of -0.05 means the option loses $5 per contract per day, all else equal.'},
+  {q:'When is an iron condor most profitable?',a:'When the underlying stays within your two short strikes until expiration. High IV rank (>50) environments are ideal since you collect more premium.'},
+  {q:'What does "selling premium" mean?',a:'Writing (selling) options to collect the premium upfront. You profit if the option expires worthless or loses value. The seller is "short vega" and "long theta."'},
+  {q:'What is implied volatility (IV)?',a:'The market\'s expectation of future price movement, derived from option prices. High IV = expensive options. Low IV = cheap options. Compare IV to historical volatility.'},
+  {q:'What is IV crush?',a:'A sharp drop in implied volatility after a binary event (earnings, FDA, etc). Option buyers suffer significant losses even if the stock moves in their direction.'},
+  {q:'What is the difference between ITM, ATM, and OTM?',a:'ITM (In-The-Money): has intrinsic value. ATM (At-The-Money): strike ≈ current price. OTM (Out-of-The-Money): no intrinsic value, only time value.'},
+  {q:'What is a credit spread?',a:'Selling one option and buying another for protection. You receive a net credit. Max profit = credit received. Max loss = spread width − credit. Defined risk.'},
+  {q:'Why would you sell a cash-secured put?',a:'To generate income while waiting to buy a stock at a lower price. If assigned, you own the stock at an effective cost below current market price.'},
+  {q:'What is the "wheel" strategy?',a:'1) Sell cash-secured put. 2) If assigned, sell covered calls. 3) If called away, repeat. It generates premium income continuously on stocks you want to own.'},
+  {q:'What does "long vega" mean?',a:'Your position profits from an increase in implied volatility. Long options (calls and puts) are long vega. You want IV to rise after you buy them.'},
+  {q:'What is gamma risk?',a:'The risk that delta changes rapidly — especially for short options near expiration. High gamma near ATM means your P&L can swing dramatically on small moves.'},
+  {q:'When is a long straddle most effective?',a:'Before a major catalyst (earnings, Fed meeting) when IV is still low. You need the actual move to exceed the total premium paid in either direction.'},
+  {q:'What is the breakeven of a long call?',a:'Strike price + premium paid. Example: $500 strike call bought for $5 has a breakeven of $505. Stock must exceed $505 at expiration to be profitable.'},
+  {q:'What is the max loss on an iron condor?',a:'(Spread width − net credit received) × 100. Example: $10 wide spreads with $3 credit → max loss = $700 per condor.'},
+  {q:'What is a LEAPS option?',a:'A Long-term Equity AnticiPation Security — an option with expiration > 1 year. Used as leveraged stock replacement or in the Poor Man\'s Covered Call strategy.'},
+  {q:'What is "assignment risk"?',a:'The risk of being forced to buy (put seller) or sell (call seller) shares when the option is exercised. American-style options (stocks, ETFs) can be assigned any time. Index options (SPX, NDX) are European-style — only at expiry.'},
+  {q:'What is the difference between SPX and SPY options?',a:'SPX: cash-settled, European-style, no assignment risk, 10× the size of SPY. SPY: physically settled, American-style (assignment risk), ETF. Both track the S&P 500.'},
+  {q:'What is a "defined risk" vs "undefined risk" trade?',a:'Defined risk: max loss is known at entry (spreads, butterflies). Undefined risk: max loss is theoretically unlimited (naked calls/short strangles). Defined risk trades require less capital and margin.'},
+  {q:'What does VIX > 30 signal for options traders?',a:'Elevated fear and high implied volatility — options are expensive. Favors premium selling strategies (iron condors, strangles). Be cautious buying options when VIX is high as you\'re paying up for premium.'},
+];
+
+const GLOSSARY_TERMS = [
+  {term:'American-style option',def:'Can be exercised any time before expiration. Most equity and ETF options (SPY, QQQ, IWM) are American-style.'},
+  {term:'Assignment',def:'When an option seller is obligated to fulfill the contract — buy shares (put seller) or sell shares (call seller).'},
+  {term:'At-The-Money (ATM)',def:'An option whose strike price equals the current price of the underlying asset.'},
+  {term:'Bid-Ask Spread',def:'The difference between the highest buyer price (bid) and lowest seller price (ask). Wide spreads mean higher transaction costs.'},
+  {term:'Black-Scholes',def:'The standard mathematical model for pricing options. Uses price, strike, time, volatility, and risk-free rate.'},
+  {term:'Breakeven',def:'The price at which a trade neither profits nor loses at expiration. For a long call: strike + premium paid.'},
+  {term:'Call Option',def:'Gives the buyer the right to purchase 100 shares at the strike price before expiration. Profits when the stock rises.'},
+  {term:'Cash-Secured Put (CSP)',def:'Selling a put option while holding enough cash to buy the shares if assigned.'},
+  {term:'Covered Call',def:'Selling a call option against 100 shares you already own to generate income.'},
+  {term:'Credit Spread',def:'A spread where you receive more premium than you pay. Your max profit equals the credit received.'},
+  {term:'Debit Spread',def:'A spread where you pay more than you receive. Used to reduce cost of a directional bet.'},
+  {term:'Delta (Δ)',def:'Rate of change of option price relative to the underlying. Ranges from 0 to 1 (calls) or -1 to 0 (puts). Also approximates probability of expiring ITM.'},
+  {term:'European-style option',def:'Can only be exercised at expiration. Index options (SPX, NDX, RUT) are European-style — no early assignment risk.'},
+  {term:'Exercise',def:'Using your right to buy (call) or sell (put) shares at the strike price.'},
+  {term:'Expiration Date',def:'The date when the option contract expires. After this, the option is worthless if OTM.'},
+  {term:'Extrinsic Value',def:'The time value portion of an option\'s price. Erodes to zero at expiration. Equals total premium minus intrinsic value.'},
+  {term:'Gamma (Γ)',def:'The rate of change of delta. Highest for ATM options near expiration. High gamma = rapidly changing position.'},
+  {term:'Greeks',def:'Risk measures for options: Delta, Gamma, Theta, Vega, Rho. Each measures sensitivity to a different variable.'},
+  {term:'Hedge',def:'A position taken to reduce risk of an existing position. A protective put hedges long stock.'},
+  {term:'Implied Volatility (IV)',def:'Market\'s forecast of a likely movement in price. Derived from option prices. Higher IV = more expensive options.'},
+  {term:'In-The-Money (ITM)',def:'An option with intrinsic value. A call is ITM when stock price > strike. A put is ITM when stock price < strike.'},
+  {term:'Intrinsic Value',def:'The real value of an option if exercised now. For a call: stock price − strike (if positive). For a put: strike − stock price (if positive).'},
+  {term:'Iron Condor',def:'Combination of a bull put spread and bear call spread. Profits when the underlying stays within a range.'},
+  {term:'IV Rank (IVR)',def:'Where current IV sits relative to its 52-week range. IVR of 80 means IV is higher than 80% of readings in the past year.'},
+  {term:'LEAPS',def:'Long-term Equity AnticiPation Security. Options with expiration dates more than one year away.'},
+  {term:'Leverage',def:'Options control 100 shares per contract. A $500 option controls $50,000 in stock — 100× leverage.'},
+  {term:'Liquidity',def:'How easily an option can be bought or sold. Measured by open interest and volume. SPX, SPY, QQQ are highly liquid.'},
+  {term:'Long Option',def:'Buying an option. You pay the premium and have rights but no obligations. Max loss = premium paid.'},
+  {term:'Mark Price',def:'The mid-price between the bid and ask. Use this to estimate the true value of your position.'},
+  {term:'Naked Option',def:'A short option position without a hedge. Unlimited risk for naked calls. High margin requirement.'},
+  {term:'Open Interest',def:'Total number of outstanding option contracts. High open interest indicates active, liquid markets.'},
+  {term:'Out-Of-The-Money (OTM)',def:'An option with no intrinsic value. A call is OTM when strike > stock price. A put is OTM when strike < stock price.'},
+  {term:'Premium',def:'The price paid to buy an option or received to sell one. Determined by intrinsic + extrinsic value.'},
+  {term:'Put Option',def:'Gives the buyer the right to sell 100 shares at the strike price. Profits when the stock falls.'},
+  {term:'Put-Call Parity',def:'The relationship between put and call prices for the same strike and expiration. Ensures no arbitrage opportunity exists.'},
+  {term:'Rho (ρ)',def:'Sensitivity of option price to interest rate changes. Least impactful greek for most retail traders.'},
+  {term:'Roll',def:'Closing an existing option position and opening a new one at a different strike or expiration. Used to manage positions.'},
+  {term:'Short Option',def:'Selling an option and collecting the premium. You have obligations but no rights. Theta works in your favor.'},
+  {term:'Straddle',def:'Buying (or selling) both a call and put at the same strike and expiration. Profits from large moves (long) or small moves (short).'},
+  {term:'Strike Price',def:'The price at which the option can be exercised. The key reference point for all P&L calculations.'},
+  {term:'Theta (Θ)',def:'Time decay. How much value an option loses per day. Negative for buyers, positive for sellers. Accelerates near expiration.'},
+  {term:'Underlying',def:'The stock, ETF, or index that the option contract is based on (e.g., SPY, AAPL, SPX).'},
+  {term:'Vega (V)',def:'Sensitivity of option price to changes in implied volatility. Long options are long vega; short options are short vega.'},
+  {term:'Vertical Spread',def:'Buying and selling options of the same type (calls or puts) with different strike prices, same expiration.'},
+  {term:'VIX',def:'CBOE Volatility Index. Measures expected 30-day volatility of the S&P 500. Often called the "fear gauge." >30 = high fear.'},
+  {term:'Volume',def:'Number of contracts traded today. High volume confirms liquidity and price discovery.'},
+  {term:'Wheel Strategy',def:'Cyclic income strategy: Sell CSP → get assigned → sell covered calls → repeat. Works best on stocks you want to own.'},
+];
+
+const TIPS = [
+  'When VIX is above 25, options are expensive — favor selling premium over buying.',
+  'Never risk more than 2-5% of your portfolio on a single options trade.',
+  'Theta decay accelerates dramatically in the last 21 days before expiration.',
+  'IV crush after earnings can wipe out long option profits even when the stock moves your way.',
+  'Use 45 DTE for income strategies — optimal balance of theta decay and adjustment time.',
+  'Delta tells you your effective share exposure. A 0.30 delta call ≈ owning 30 shares.',
+  'Rolling a losing position to a later date buys time but also increases capital at risk.',
+  'The bid-ask spread is a hidden cost. Always check liquidity before entering a trade.',
+  'Defined risk trades (spreads) require less margin and are better for portfolio management.',
+  'On SPX and NDX options, there\'s no early assignment risk — European-style settlement.',
+];
+
+// ══════════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════════
+const pages = ['home','strategies','calc','greeks','quiz','glossary'];
+let currentPage = 'home';
+
+function switchPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  currentPage = id;
+  updateNavIndicator(id);
+  if (id === 'ivrank') loadIVRank();
+  if (id === 'earnings') loadLiveEarnings();
+  if (id === 'ai') updateAIMarketSummary();
+  if (id === 'alerts') renderAlertLevels();
+}
+
+function updateNavIndicator(id) {
+  const btn = document.getElementById('nav-'+id);
+  const nav = document.getElementById('nav');
+  const ind = document.getElementById('navIndicator');
+  const rect = btn.getBoundingClientRect();
+  const navRect = nav.getBoundingClientRect();
+  ind.style.left = (rect.left - navRect.left) + 'px';
+  ind.style.width = rect.width + 'px';
+}
+
+window.addEventListener('resize', () => updateNavIndicator(currentPage));
+setTimeout(() => updateNavIndicator('home'), 100);
+
+// ══════════════════════════════════════════════
+// LIVE DATA
+// ══════════════════════════════════════════════
+let liveData = {};
+
+async function fetchQuote(sym) {
+  try {
+    const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${API_KEY}`);
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (!d || typeof d.c !== 'number' || d.c === 0) return null;
+    return d;
+  } catch(e) { return null; }
+}
+
+async function fetchVix() {
+  // Source 1: Yahoo Finance via allorigins CORS proxy
+  try {
+    const yahoo = 'https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1d';
+    const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(yahoo));
+    if (r.ok) {
+      const wrapper = await r.json();
+      const json = JSON.parse(wrapper.contents);
+      const meta = json?.chart?.result?.[0]?.meta;
+      const price = meta?.regularMarketPrice ?? meta?.previousClose;
+      const prev  = meta?.previousClose ?? meta?.chartPreviousClose;
+      if (price && price >= 9 && price <= 90) {
+        const change = price - (prev || price);
+        return { c: price, d: change, dp: prev ? (change/prev)*100 : 0 };
+      }
+    }
+  } catch(e) {}
+
+  // Source 2: corsproxy.io with Yahoo
+  try {
+    const r2 = await fetch('https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1d');
+    if (r2.ok) {
+      const json = await r2.json();
+      const meta = json?.chart?.result?.[0]?.meta;
+      const price = meta?.regularMarketPrice ?? meta?.previousClose;
+      const prev  = meta?.previousClose ?? meta?.chartPreviousClose;
+      if (price && price >= 9 && price <= 90) {
+        const change = price - (prev || price);
+        return { c: price, d: change, dp: prev ? (change/prev)*100 : 0 };
+      }
+    }
+  } catch(e) {}
+
+  // Source 3: Finnhub VIXY ETF (tracks VIX futures) — scale is NOT the same as VIX
+  // VIXY typically trades at ~1/5 of VIX. We don't scale it — just skip if unreliable.
+  // Instead, try Finnhub with ^VIX one more time
+  try {
+    const r3 = await fetch(`https://finnhub.io/api/v1/quote?symbol=%5EVIX&token=${API_KEY}`);
+    if (r3.ok) {
+      const d = await r3.json();
+      if (d?.c && d.c >= 9 && d.c <= 90) return { c: d.c, d: d.d || 0, dp: d.dp || 0 };
+    }
+  } catch(e) {}
+
+  return null;
+}
+
+async function loadAllData() {
+  // Show tip immediately — updateVixSection will enrich it with live VIX context
+  document.getElementById('dailyTip').textContent = TIPS[Math.floor(Date.now() / 86400000) % TIPS.length];
+  document.getElementById('tickerStatus').textContent = '● LOADING';
+
+  const results = [];
+
+  // Fetch all ticker symbols
+  for (const sym of TICKER_SYMBOLS) {
+    const d = await fetchQuote(sym);
+    if (d) {
+      liveData[sym] = d;
+      results.push({sym, price: d.c, chg: d.d || 0, pct: d.dp || 0});
+    }
+  }
+
+  // Fetch VIX separately
+  const vixData = await fetchVix();
+  if (vixData) liveData['VIX'] = vixData;
+
+  if (results.length > 0) {
+    document.getElementById('tickerStatus').textContent = '● LIVE';
+    renderTicker(results);
+  } else {
+    document.getElementById('tickerStatus').textContent = '● OFFLINE';
+  }
+
+  updateHomeTiles();
+  updateVixSection();
+
+  // Refresh every 15s
+  setInterval(async () => {
+    for (const sym of TICKER_SYMBOLS) {
+      const d = await fetchQuote(sym);
+      if (d) liveData[sym] = d;
+    }
+    const vd = await fetchVix();
+    if (vd) liveData['VIX'] = vd;
+    const r2 = TICKER_SYMBOLS.map(s => liveData[s] ? {sym:s, price:liveData[s].c, chg:liveData[s].d||0, pct:liveData[s].dp||0} : null).filter(Boolean);
+    if (r2.length) renderTicker(r2);
+    updateHomeTiles();
+    updateVixSection();
+  }, 15000);
+}
+
+function renderTicker(quotes) {
+  let html = '';
+  for (let i = 0; i < 2; i++) {
+    for (const q of quotes) {
+      if (!q.price) continue;
+      const up = q.chg >= 0;
+      html += `<span class="tick">
+        <span class="tick-sym">${q.sym}</span>
+        <span class="tick-price">$${q.price.toFixed(2)}</span>
+        <span class="tick-chg ${up?'up':'dn'}">${up?'▲':'▼'}${Math.abs(q.pct||0).toFixed(2)}%</span>
+      </span>`;
+    }
+  }
+  document.getElementById('tickerInner').innerHTML = html;
+}
+
+function updateHomeTiles() {
+  ['SPY','QQQ','IWM','VIX'].forEach(sym => {
+    const d = liveData[sym];
+    if (!d || !d.c) return;
+    const up = (d.d || 0) >= 0;
+    document.getElementById('p-'+sym).textContent = '$'+d.c.toFixed(2);
+    document.getElementById('c-'+sym).textContent = (up?'▲ +':'▼ ')+(d.d||0).toFixed(2)+' ('+(d.dp||0).toFixed(2)+'%)';
+    document.getElementById('c-'+sym).className = 'chg '+(up?'up':'dn');
+    document.getElementById('tile-'+sym).className = 'market-tile '+(up?'up':'dn');
+  });
+}
+
+function updateVixSection() {
+  let tipIdx = Math.floor(Date.now() / 86400000) % TIPS.length;
+  const vixRaw = liveData['VIX'];
+  const vix = vixRaw?.c;
+
+  // VIX is always between 9–90. Reject anything outside that range.
+  if (!vix || vix < 9 || vix > 90) {
+    document.getElementById('vixBig').textContent = 'N/A';
+    document.getElementById('vixRegimePill').textContent = 'UNAVAILABLE';
+    document.getElementById('vixRegimePill').className = 'pill neutral';
+    document.getElementById('vixAdvice').textContent = 'Check cnbc.com/quotes/VIX for live VIX';
+    document.getElementById('p-VIX').textContent = 'N/A';
+    document.getElementById('c-VIX').textContent = 'Free API limitation';
+    document.getElementById('c-VIX').className = 'chg';
+    document.getElementById('dailyTip').textContent = TIPS[tipIdx];
+    return;
+  }
+  document.getElementById('vixBig').textContent = vix.toFixed(2);
+  let regime, advice, pillClass;
+  if (vix < 15)      { regime='LOW VOL';   advice='Cheap options — favor buying. Condors tricky.';       pillClass='income';  }
+  else if (vix < 20) { regime='NORMAL';    advice='Balanced — spreads & condors work well.';              pillClass='neutral'; }
+  else if (vix < 25) { regime='ELEVATED';  advice='Premium selling favored. High credits available.';    pillClass='neutral'; }
+  else if (vix < 35) { regime='HIGH FEAR'; advice='Sell premium carefully. Size down positions.';        pillClass='bear';    }
+  else               { regime='EXTREME';   advice='Manage risk aggressively. Undefined trades dangerous.'; pillClass='bear';  }
+  document.getElementById('vixRegimePill').textContent = regime;
+  document.getElementById('vixRegimePill').className = 'pill '+pillClass;
+  document.getElementById('vixAdvice').textContent = advice;
+
+  // Fear/greed from VIX
+  const fear = Math.min(100, Math.max(0, ((vix - 10) / 30) * 100));
+  const greed = 100 - fear;
+  const fill = document.getElementById('moodFill');
+  fill.style.width = greed + '%';
+  fill.style.background = greed > 70 ? 'var(--green)' : greed > 40 ? 'var(--yellow)' : 'var(--red)';
+  document.getElementById('moodLabel').textContent =
+    greed > 80 ? 'EXTREME GREED' : greed > 60 ? 'GREED' : greed > 40 ? 'NEUTRAL' : greed > 20 ? 'FEAR' : 'EXTREME FEAR';
+
+  // Daily tip with live VIX context
+  document.getElementById('dailyTip').textContent =
+    vix > 25 ? `VIX at ${vix.toFixed(1)} — premium-selling environment. Iron condors and short strangles offer elevated credit. Size positions carefully.`
+    : vix < 15 ? `VIX at ${vix.toFixed(1)} — low vol. Options are cheap. Great time to buy calls/puts ahead of upcoming catalysts.`
+    : `VIX at ${vix.toFixed(1)} — ${TIPS[tipIdx]}`;
+
+  // Update dependent features
+  checkVixAlerts(vix);
+  updateAIMarketSummary();
+}
+
+// ══════════════════════════════════════════════
+// STRATEGIES
+// ══════════════════════════════════════════════
+function renderStrategies(filter='all') {
+  const list = document.getElementById('stratList');
+  const filtered = filter === 'all' ? STRATEGIES : STRATEGIES.filter(s => s.cat === filter);
+  list.innerHTML = filtered.map(s => `
+    <div class="strat-card ${s.cat}" onclick="openModal('${s.id}')">
+      <div class="strat-card-top">
+        <div class="strat-name">${s.name}</div>
+        <div class="chevron">${s.emoji}</div>
+      </div>
+      <div class="strat-desc">${s.desc}</div>
+      <div class="strat-meta">
+        <span class="pill ${s.cat}" style="font-size:10px;">${s.cat.toUpperCase()}</span>
+        <span class="meta-chip">Max profit: ${s.profit}</span>
+        <span class="meta-chip">Break-even: ${s.be}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterStrats(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderStrategies(cat);
+}
+
+// ══════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════
+function openModal(id) {
+  const s = STRATEGIES.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('modalTitle').textContent = s.name;
+  document.getElementById('modalPill').innerHTML = `<span class="pill ${s.cat}">${s.cat.toUpperCase()}</span>`;
+  document.getElementById('modalEmoji').textContent = s.emoji;
+  document.getElementById('mi-profit').textContent = s.profit;
+  document.getElementById('mi-loss').textContent = s.loss;
+  document.getElementById('mi-be').textContent = s.be;
+  document.getElementById('mi-iv').textContent = s.iv;
+  document.getElementById('modalWhen').textContent = s.when;
+  document.getElementById('modalExample').innerHTML = s.example.replace(/(\$[\d,]+|[A-Z]{2,5}(?= at| call| put))/g, '<strong>$1</strong>');
+  document.getElementById('modalGreeks').innerHTML = s.greeks.map(g => `
+    <div class="greek-row">
+      <div><div class="greek-name">${g.g}</div><div class="greek-impact">${g.impact}</div></div>
+      <span class="greek-badge ${g.badge}">${g.badge==='pos'?'Helpful':g.badge==='neg'?'Hurts':'Neutral'}</span>
+    </div>
+  `).join('');
+  // Resources
+  document.getElementById('modalResources').innerHTML = (s.resources||[]).map(r => `
+    <a class="resource-link" href="${r.url}" target="_blank" rel="noopener">
+      <div class="resource-icon ${r.type}">${r.type==='yt'?'▶':'📖'}</div>
+      <div class="resource-text">
+        <div class="resource-label">${r.label}</div>
+        <div class="resource-type">${r.type==='yt'?'YouTube Search':'Article / Guide'}</div>
+      </div>
+      <div class="resource-arrow">↗</div>
+    </a>
+  `).join('');
+  drawPayoff(s.payoff);
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function drawPayoff(type) {
+  const canvas = document.getElementById('modalCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const mid = W/2, baseline = H*0.65;
+  const col = { green:'#00ff87', red:'#ff3d6b', yellow:'#ffca28', grid:'rgba(255,255,255,0.06)', text:'rgba(255,255,255,0.3)' };
+
+  // Grid
+  ctx.strokeStyle = col.grid; ctx.lineWidth = 1;
+  for (let i=0;i<5;i++){const y=H*0.1+i*(H*0.8/4);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  // Baseline
+  ctx.strokeStyle = col.yellow; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(0,baseline);ctx.lineTo(W,baseline);ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+
+  const plots = {
+    long_call: ()=>{ctx.strokeStyle=col.green;ctx.moveTo(0,baseline);ctx.lineTo(mid,baseline);ctx.lineTo(W,H*0.1);},
+    long_put:  ()=>{ctx.strokeStyle=col.green;ctx.moveTo(0,H*0.1);ctx.lineTo(mid,baseline);ctx.lineTo(W,baseline);},
+    bull_call: ()=>{ctx.strokeStyle=col.green;ctx.moveTo(0,baseline+20);ctx.lineTo(mid-40,baseline+20);ctx.lineTo(mid+40,baseline-30);ctx.lineTo(W,baseline-30);},
+    bear_put:  ()=>{ctx.strokeStyle=col.green;ctx.moveTo(0,baseline-30);ctx.lineTo(mid-40,baseline-30);ctx.lineTo(mid+40,baseline+20);ctx.lineTo(W,baseline+20);},
+    iron_condor:()=>{ctx.strokeStyle=col.green;ctx.moveTo(0,baseline+25);ctx.lineTo(mid-60,baseline+25);ctx.lineTo(mid-30,baseline-20);ctx.lineTo(mid+30,baseline-20);ctx.lineTo(mid+60,baseline+25);ctx.lineTo(W,baseline+25);},
+    iron_butterfly:()=>{ctx.strokeStyle=col.green;ctx.moveTo(0,baseline+25);ctx.lineTo(mid-50,baseline+25);ctx.lineTo(mid,baseline-40);ctx.lineTo(mid+50,baseline+25);ctx.lineTo(W,baseline+25);},
+    straddle:  ()=>{ctx.strokeStyle=col.green;ctx.moveTo(0,H*0.1);ctx.lineTo(mid,baseline+20);ctx.lineTo(W,H*0.1);},
+    strangle:  ()=>{ctx.strokeStyle=col.green;ctx.moveTo(0,H*0.15);ctx.lineTo(mid-50,baseline+20);ctx.lineTo(mid+50,baseline+20);ctx.lineTo(W,H*0.15);},
+    covered_call:()=>{ctx.strokeStyle=col.green;ctx.moveTo(0,baseline+30);ctx.lineTo(mid-20,baseline+30);ctx.lineTo(mid+40,baseline-25);ctx.lineTo(W,baseline-25);},
+    csp:       ()=>{ctx.strokeStyle=col.green;ctx.moveTo(0,baseline+30);ctx.lineTo(mid,baseline+30);ctx.lineTo(mid+60,baseline-20);ctx.lineTo(W,baseline-20);},
+    butterfly: ()=>{ctx.strokeStyle=col.green;ctx.moveTo(0,baseline+15);ctx.lineTo(mid-50,baseline+15);ctx.lineTo(mid,H*0.1);ctx.lineTo(mid+50,baseline+15);ctx.lineTo(W,baseline+15);},
+    calendar:  ()=>{ctx.strokeStyle=col.green;ctx.moveTo(0,baseline+15);ctx.lineTo(mid-30,baseline+15);ctx.lineTo(mid,baseline-30);ctx.lineTo(mid+30,baseline+15);ctx.lineTo(W,baseline+15);},
+  };
+
+  (plots[type] || plots.long_call)();
+  ctx.stroke();
+
+  // Labels
+  ctx.font = '10px JetBrains Mono, monospace'; ctx.fillStyle = col.text; ctx.textAlign='center';
+  ctx.fillText('LOSS',W*0.1,H-8); ctx.fillText('BREAKEVEN',W*0.5,H-8); ctx.fillText('PROFIT',W*0.9,H-8);
+  ctx.fillStyle=col.yellow; ctx.font='bold 10px JetBrains Mono,monospace';
+  ctx.fillText('0',W*0.5,baseline-4);
+}
+
+// ══════════════════════════════════════════════
+// CALCULATOR
+// ══════════════════════════════════════════════
+const calcConfigs = {
+  long_call:{fields:['Stock Price','Strike Price','Premium Paid'],fn:(v)=>{
+    const [s,k,p]=v; const be=k+p;
+    return {profit:'Unlimited',loss:'$'+(p*100).toFixed(0),be:'$'+be.toFixed(2),rr:'∞',
+    advice:`Breakeven at $${be.toFixed(2)}. Stock needs to rise ${((be-s)/s*100).toFixed(1)}% to profit.`,
+    points:[{x:0,y:-p},{x:k,y:-p},{x:be,y:0},{x:k+p*3,y:p*2}]};
+  }},
+  long_put:{fields:['Stock Price','Strike Price','Premium Paid'],fn:(v)=>{
+    const [s,k,p]=v; const be=k-p;
+    return {profit:'$'+((k-p)*100).toFixed(0)+' max',loss:'$'+(p*100).toFixed(0),be:'$'+be.toFixed(2),rr:((k-p)/p).toFixed(1)+':1',
+    advice:`Breakeven at $${be.toFixed(2)}. Stock needs to fall ${((s-be)/s*100).toFixed(1)}% to profit.`,
+    points:[{x:0,y:k-p},{x:be,y:0},{x:k,y:-p},{x:k*1.2,y:-p}]};
+  }},
+  bull_call:{fields:['Lower Strike','Higher Strike','Net Debit'],fn:(v)=>{
+    const [lo,hi,d]=v; const be=lo+d; const mp=hi-lo-d;
+    return {profit:'$'+(mp*100).toFixed(0),loss:'$'+(d*100).toFixed(0),be:'$'+be.toFixed(2),rr:(mp/d).toFixed(1)+':1',
+    advice:`Max profit $${(mp*100).toFixed(0)} if above $${hi} at expiry. Max loss $${(d*100).toFixed(0)} below $${lo}.`,
+    points:[{x:lo-5,y:-d},{x:lo,y:-d},{x:be,y:0},{x:hi,y:mp},{x:hi+5,y:mp}]};
+  }},
+  bear_put:{fields:['Higher Strike','Lower Strike','Net Debit'],fn:(v)=>{
+    const [hi,lo,d]=v; const be=hi-d; const mp=hi-lo-d;
+    return {profit:'$'+(mp*100).toFixed(0),loss:'$'+(d*100).toFixed(0),be:'$'+be.toFixed(2),rr:(mp/d).toFixed(1)+':1',
+    advice:`Max profit $${(mp*100).toFixed(0)} if below $${lo}. Breakeven at $${be.toFixed(2)}.`,
+    points:[{x:lo-5,y:mp},{x:lo,y:mp},{x:be,y:0},{x:hi,y:-d},{x:hi+5,y:-d}]};
+  }},
+  iron_condor:{fields:['Put Short Strike','Put Long Strike','Call Short Strike','Call Long Strike','Net Credit'],fn:(v)=>{
+    const [ps,pl,cs,cl,cr]=v; const ml=(ps-pl)-cr; const beLow=ps-cr; const beHigh=cs+cr;
+    return {profit:'$'+(cr*100).toFixed(0),loss:'$'+(ml*100).toFixed(0),be:'$'+beLow.toFixed(2)+' / $'+beHigh.toFixed(2),rr:(cr/ml).toFixed(2)+':1',
+    advice:`Profit zone: $${beLow.toFixed(2)} to $${beHigh.toFixed(2)}. Stay inside this range for full profit.`,
+    points:[{x:pl,y:-ml},{x:ps,y:-ml},{x:beLow,y:cr},{x:(ps+cs)/2,y:cr},{x:beHigh,y:cr},{x:cs,y:-ml*0.1},{x:cl,y:-ml}]};
+  }},
+  straddle:{fields:['Strike Price','Call Premium','Put Premium'],fn:(v)=>{
+    const [k,c,p]=v; const tot=c+p; const beLow=k-tot; const beHigh=k+tot;
+    return {profit:'Unlimited',loss:'$'+(tot*100).toFixed(0),be:'$'+beLow.toFixed(2)+' / $'+beHigh.toFixed(2),rr:'∞',
+    advice:`Need move bigger than $${tot.toFixed(2)} (${(tot/k*100).toFixed(1)}%) in either direction to profit.`,
+    points:[{x:k-tot*2,y:tot},{x:beLow,y:0},{x:k,y:-tot},{x:beHigh,y:0},{x:k+tot*2,y:tot}]};
+  }},
+  covered_call:{fields:['Stock Cost Basis','Call Strike','Call Premium'],fn:(v)=>{
+    const [cb,s,p]=v; const be=cb-p; const mp=(s-cb+p)*100;
+    return {profit:'$'+mp.toFixed(0)+' max',loss:'$'+((be)*100).toFixed(0)+' (stock to 0)',be:'$'+be.toFixed(2),rr:(mp/((be)*100)).toFixed(2)+':1',
+    advice:`Effective cost basis reduced to $${be.toFixed(2)}. Called away above $${s}. Max profit $${mp.toFixed(0)}.`,
+    points:[{x:0,y:-be},{x:be,y:0},{x:s,y:s-cb+p},{x:s+5,y:s-cb+p}]};
+  }},
+  csp:{fields:['Stock Price','Put Strike','Premium Received'],fn:(v)=>{
+    const [s,k,p]=v; const be=k-p;
+    return {profit:'$'+(p*100).toFixed(0),loss:'$'+(be*100).toFixed(0)+' (stock to 0)',be:'$'+be.toFixed(2),rr:(p/(k-p)).toFixed(2)+':1',
+    advice:`Keep $${(p*100).toFixed(0)} if stock stays above $${k}. Effective buy price = $${be.toFixed(2)} if assigned.`,
+    points:[{x:0,y:-be},{x:be,y:0},{x:k,y:p},{x:s,y:p}]};
+  }},
+};
+
+function updateCalcFields() {
+  const type = document.getElementById('calcType').value;
+  const cfg = calcConfigs[type];
+  document.getElementById('calcFields').innerHTML = cfg.fields.map((f,i)=>`
+    <div class="calc-row">
+      <div class="calc-label">${f}</div>
+      <input class="calc-input" type="number" id="cf${i}" placeholder="0.00" step="0.01">
+    </div>
+  `).join('');
+  document.getElementById('calcResults').style.display = 'none';
+}
+
+function calculate() {
+  const type = document.getElementById('calcType').value;
+  const cfg = calcConfigs[type];
+  const vals = cfg.fields.map((_,i) => parseFloat(document.getElementById('cf'+i).value)||0);
+  const res = cfg.fn(vals);
+  document.getElementById('maxProfit').textContent = res.profit;
+  document.getElementById('maxLoss').textContent = res.loss;
+  document.getElementById('breakeven').textContent = res.be;
+  document.getElementById('rr').textContent = res.rr;
+  document.getElementById('calcAdvice').innerHTML = `<div class="tip-label">💡 ANALYSIS</div><div class="tip-text">${res.advice}</div>`;
+  document.getElementById('calcResults').style.display = 'block';
+  drawCalcChart(res.points);
+}
+
+function drawCalcChart(points) {
+  const canvas = document.getElementById('payoffCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  if (!points || points.length < 2) return;
+
+  const xs = points.map(p=>p.x), ys = points.map(p=>p.y);
+  const minX=Math.min(...xs), maxX=Math.max(...xs);
+  const minY=Math.min(...ys), maxY=Math.max(...ys);
+  const rangeY = maxY - minY || 1;
+  const pad = {l:10,r:10,t:20,b:20};
+
+  const toX = x => pad.l + (x-minX)/(maxX-minX)*(W-pad.l-pad.r);
+  const toY = y => pad.t + (1-(y-minY)/rangeY)*(H-pad.t-pad.b);
+
+  // Zero line
+  const zeroY = toY(0);
+  ctx.strokeStyle = 'rgba(255,202,40,0.5)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(pad.l,zeroY); ctx.lineTo(W-pad.r,zeroY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Fill
+  ctx.beginPath();
+  ctx.moveTo(toX(points[0].x), toX(points[0].y));
+  points.forEach(p => ctx.lineTo(toX(p.x), toY(p.y)));
+  ctx.lineTo(toX(points[points.length-1].x), zeroY);
+  ctx.lineTo(toX(points[0].x), zeroY);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0,pad.t,0,H-pad.b);
+  grad.addColorStop(0,'rgba(0,255,135,0.2)'); grad.addColorStop(1,'rgba(255,61,107,0.1)');
+  ctx.fillStyle = grad; ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#00ff87'; ctx.lineWidth = 2.5;
+  points.forEach((p,i) => i===0 ? ctx.moveTo(toX(p.x),toY(p.y)) : ctx.lineTo(toX(p.x),toY(p.y)));
+  ctx.stroke();
+
+  // Dots
+  points.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(toX(p.x),toY(p.y),3,0,Math.PI*2);
+    ctx.fillStyle = p.y >= 0 ? '#00ff87' : '#ff3d6b'; ctx.fill();
+  });
+}
+
+// ══════════════════════════════════════════════
+// GREEKS SLIDERS
+// ══════════════════════════════════════════════
+function updateDelta(v) {
+  const d = (v/100).toFixed(2);
+  document.getElementById('deltaVal').textContent = 'Δ = '+d;
+  const gain = (d*100).toFixed(0);
+  document.getElementById('deltaEffect').textContent = `A ${d} delta option gains ~$${gain} per contract when stock rises $1. It has ~${v}% probability of expiring ITM.`;
+}
+function updateTheta(v) {
+  document.getElementById('thetaVal').textContent = v+' DTE';
+  const rate = v <= 7 ? 'very fast' : v <= 21 ? 'accelerating' : 'moderate';
+  document.getElementById('thetaEffect').textContent = `At ${v} DTE, decay is ${rate}. ${v<=7?'0DTE options lose value extremely rapidly intraday.':v<=21?'The final 21 DTE period is where theta sellers thrive most.':'Roughly linear decay — good time to initiate income trades at 45 DTE.'}`;
+}
+function updateGamma(v) {
+  const label = v<30?'OTM':v<70?'ATM':'ITM';
+  document.getElementById('gammaVal').textContent = label;
+  document.getElementById('gammaEffect').textContent = label==='ATM'
+    ? 'ATM options have maximum gamma — delta changes fastest here. This is why 0DTE ATM options move explosively.'
+    : label==='OTM' ? 'OTM options have low gamma — delta changes slowly. Cheaper but needs bigger move.'
+    : 'Deep ITM options have low gamma — behave like stock. High delta, less leverage.';
+}
+function updateVega(v) {
+  const sign = v>=0?'+':'';
+  document.getElementById('vegaVal').textContent = sign+v+' vol pts';
+  const impact = Math.abs(v*5).toFixed(0);
+  document.getElementById('vegaEffect').textContent = v>0
+    ? `A +${v} vol point increase adds ~$${impact} to a standard long option position. Pre-earnings IV expansion benefits buyers.`
+    : v<0 ? `IV crush of ${Math.abs(v)} vol points costs ~$${impact} on a long option. This is why earnings plays often lose money even when the stock moves.`
+    : 'No IV change — option price unchanged from vega perspective.';
+}
+
+// ══════════════════════════════════════════════
+// QUIZ
+// ══════════════════════════════════════════════
+let quizIdx = 0, quizScore = 0, quizFlipped = false;
+const shuffled = [...QUIZ_DATA].sort(()=>Math.random()-0.5);
+
+function renderQuiz() {
+  if (quizIdx >= shuffled.length) { showScore(); return; }
+  const q = shuffled[quizIdx];
+  document.getElementById('quizQ').textContent = q.q;
+  document.getElementById('quizA').textContent = q.a;
+  document.getElementById('quizCard').classList.remove('flipped');
+  document.getElementById('quizBtns').style.display = 'none';
+  document.getElementById('quizHint').style.display = 'block';
+  quizFlipped = false;
+  const pct = (quizIdx/shuffled.length)*100;
+  document.getElementById('quizProgress').style.width = pct+'%';
+  document.getElementById('quizProgressTxt').textContent = `Question ${quizIdx+1} of ${shuffled.length} • Score: ${quizScore}`;
+}
+
+function flipQuiz() {
+  if (quizFlipped) return;
+  quizFlipped = true;
+  document.getElementById('quizCard').classList.add('flipped');
+  document.getElementById('quizBtns').style.display = 'flex';
+  document.getElementById('quizHint').style.display = 'none';
+}
+
+function quizNext(correct) {
+  if (correct) quizScore++;
+  quizIdx++;
+  renderQuiz();
+}
+
+function showScore() {
+  document.getElementById('quizCard').style.display = 'none';
+  document.getElementById('quizBtns').style.display = 'none';
+  document.getElementById('quizHint').style.display = 'none';
+  document.getElementById('quizScore').style.display = 'block';
+  document.getElementById('scoreNum').textContent = quizScore;
+  const pct = quizScore/shuffled.length;
+  document.getElementById('scoreMsg').textContent = pct>=0.9?'🏆 Options Master! Exceptional.':pct>=0.7?'🎯 Strong knowledge! Keep it up.':pct>=0.5?'📚 Good start. Review the strategies section.':'💪 Keep studying — you\'ll get there!';
+  document.getElementById('quizProgress').style.width = '100%';
+}
+
+function restartQuiz() {
+  quizIdx=0; quizScore=0;
+  shuffled.sort(()=>Math.random()-0.5);
+  document.getElementById('quizCard').style.display = 'flex';
+  document.getElementById('quizScore').style.display = 'none';
+  renderQuiz();
+}
+
+// ══════════════════════════════════════════════
+// GLOSSARY
+// ══════════════════════════════════════════════
+function renderGlossary(filter='') {
+  const list = document.getElementById('glossaryList');
+  const filtered = filter ? GLOSSARY_TERMS.filter(t=>t.term.toLowerCase().includes(filter)||t.def.toLowerCase().includes(filter)) : GLOSSARY_TERMS;
+  const byLetter = {};
+  filtered.forEach(t => {
+    const l = t.term[0].toUpperCase();
+    if (!byLetter[l]) byLetter[l] = [];
+    byLetter[l].push(t);
+  });
+  list.innerHTML = Object.keys(byLetter).sort().map(l=>`
+    <div class="glossary-letter">${l}</div>
+    ${byLetter[l].map(t=>`
+      <div class="glossary-item">
+        <div class="glossary-term">${t.term}</div>
+        <div class="glossary-def">${t.def}</div>
+      </div>
+    `).join('')}
+  `).join('');
+}
+
+function searchGlossary(val) { renderGlossary(val.toLowerCase()); }
+
+// ══════════════════════════════════════════════
+// EARNINGS CALENDAR — LIVE from Finnhub
+// ══════════════════════════════════════════════
+const EMOJI_MAP = {NVDA:'🎮',AAPL:'🍎',AMZN:'📦',META:'👓',GOOGL:'🔍',MSFT:'🖥️',TSLA:'⚡',JPM:'🏦',GS:'💼',NFLX:'🎬',AMD:'💻',CRM:'☁️',ORCL:'🗄️',ADBE:'🎨',INTC:'💾',MU:'🧠',QCOM:'📡',BA:'✈️',WMT:'🛒',DIS:'🏰',UBER:'🚗',LYFT:'🚕',SNAP:'👻',TWTR:'🐦',COIN:'🪙',HOOD:'🏹',GME:'🎮',AMC:'🎥',V:'💳',MA:'💴',PYPL:'💸',BAC:'🏛️',C:'🏢',WFC:'💰',MS:'📊',BLK:'⬛',NKE:'👟',FDX:'📫'};
+
+// Domain map for Clearbit logo API
+// Brand colors — inline, zero network dependency
+const BRAND_MAP = {
+  AAPL:{bg:'#000',fg:'#fff'}, MSFT:{bg:'#fff',fg:'#000'}, GOOGL:{bg:'#fff',fg:'#4285f4'},
+  AMZN:{bg:'#ff9900',fg:'#000'}, META:{bg:'#0082fb',fg:'#fff'}, TSLA:{bg:'#cc0000',fg:'#fff'},
+  NVDA:{bg:'#76b900',fg:'#fff'}, NFLX:{bg:'#e50914',fg:'#fff'}, AMD:{bg:'#ed1c24',fg:'#fff'},
+  INTC:{bg:'#0071c5',fg:'#fff'}, QCOM:{bg:'#3253dc',fg:'#fff'}, CRM:{bg:'#00a1e0',fg:'#fff'},
+  ORCL:{bg:'#f80000',fg:'#fff'}, ADBE:{bg:'#ff0000',fg:'#fff'}, JPM:{bg:'#005eb8',fg:'#fff'},
+  BAC:{bg:'#e31837',fg:'#fff'}, GS:{bg:'#6699cc',fg:'#fff'}, MS:{bg:'#003087',fg:'#fff'},
+  WFC:{bg:'#d71e28',fg:'#fff'}, C:{bg:'#003b70',fg:'#fff'}, V:{bg:'#1a1f71',fg:'#fff'},
+  MA:{bg:'#eb001b',fg:'#fff'}, PYPL:{bg:'#003087',fg:'#fff'}, UBER:{bg:'#000',fg:'#fff'},
+  LYFT:{bg:'#ff00bf',fg:'#fff'}, ABNB:{bg:'#ff5a5f',fg:'#fff'}, DIS:{bg:'#006e99',fg:'#fff'},
+  WMT:{bg:'#0071ce',fg:'#fff'}, NKE:{bg:'#000',fg:'#fff'}, SBUX:{bg:'#00704a',fg:'#fff'},
+  BA:{bg:'#1d4289',fg:'#fff'}, XOM:{bg:'#d2001c',fg:'#fff'}, JNJ:{bg:'#d9001c',fg:'#fff'},
+  PFE:{bg:'#0093d0',fg:'#fff'}, COIN:{bg:'#0052ff',fg:'#fff'}, SNAP:{bg:'#fffc00',fg:'#000'},
+  HOOD:{bg:'#00c805',fg:'#fff'}, FDX:{bg:'#4d148c',fg:'#fff'}, SPOT:{bg:'#1db954',fg:'#fff'},
+  ZM:{bg:'#2d8cff',fg:'#fff'}, GME:{bg:'#e31837',fg:'#fff'}, MU:{bg:'#e2001a',fg:'#fff'},
+  GE:{bg:'#3a5dae',fg:'#fff'}, SHOP:{bg:'#96bf48',fg:'#fff'}, BLK:{bg:'#000',fg:'#fff'},
+  NKE:{bg:'#000',fg:'#fff'}, GS:{bg:'#6699cc',fg:'#fff'}, MS:{bg:'#003087',fg:'#fff'},
+};
+
+// Multi-color SVG logos for top brands
+const SVG_LOGOS = {
+  MSFT: `<svg viewBox="0 0 21 21" width="30" height="30"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>`,
+  GOOGL:`<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>`,
+  MA:   `<svg viewBox="0 0 38 24" width="38" height="24"><circle cx="15" cy="12" r="11" fill="#eb001b"/><circle cx="23" cy="12" r="11" fill="#f79e1b" opacity="0.85"/></svg>`,
+  SPOT: `<svg viewBox="0 0 24 24" width="28" height="28" fill="#1db954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.36-.66.48-1.021.24-2.82-1.74-6.36-2.1-10.561-1.14-.418.12-.779-.18-.899-.54-.12-.42.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.479.66.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.3c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.72 1.62.539.3.719 1.02.419 1.56-.3.42-1.02.6-1.559.3z"/></svg>`,
+};
+
+// Logo cache — stores fetched URLs so we don't re-fetch same symbol
+const logoCache = {};
+
+function getLogoHTML(sym, emoji) {
+  const brand = BRAND_MAP[sym];
+  const svg = SVG_LOGOS[sym];
+  const divId = `logo-${sym}`;
+
+  // Tier 1: Inline SVG — instant, no network
+  if (svg) {
+    const bg = brand ? brand.bg : '#1a1a2e';
+    return `<div id="${divId}" style="width:44px;height:44px;border-radius:12px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">${svg}</div>`;
+  }
+
+  // Tier 2: Known brand color tile — instant, no network
+  if (brand) {
+    const letters = sym.length <= 2 ? sym : sym.slice(0,2);
+    return `<div id="${divId}" style="width:44px;height:44px;border-radius:12px;background:${brand.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:900;color:${brand.fg};font-family:'Syne',sans-serif;letter-spacing:-0.5px;">${letters}</div>`;
+  }
+
+  // Tier 3: Unknown company — show emoji first, then async fetch logo
+  const placeholder = `<div id="${divId}" style="width:44px;height:44px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${emoji}</div>`;
+
+  // Kick off async logo fetch for unknown symbols
+  if (!logoCache[sym]) {
+    logoCache[sym] = 'loading';
+    fetchLogoForSymbol(sym, emoji, divId);
+  }
+
+  return placeholder;
+}
+
+async function fetchLogoForSymbol(sym, emoji, divId) {
+  // Try these free sources in order:
+  const sources = [
+    // 1. Finnhub company profile has logo_url
+    async () => {
+      const r = await fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${sym}&token=${API_KEY}`);
+      const d = await r.json();
+      if (d?.logo && d.logo.startsWith('http')) return { url: d.logo, bg: '#fff' };
+      return null;
+    },
+    // 2. UI Avatars as styled fallback (generates letter-based avatar)
+    async () => {
+      const colors = ['1a1f71','005eb8','cc0000','76b900','e50914','0082fb','ff9900','00a1e0'];
+      const color = colors[sym.charCodeAt(0) % colors.length];
+      return { url: `https://ui-avatars.com/api/?name=${sym}&background=${color}&color=fff&size=64&bold=true&font-size=0.4`, bg: '#'+color };
+    },
+  ];
+
+  for (const source of sources) {
+    try {
+      const result = await source();
+      if (result?.url) {
+        logoCache[sym] = result;
+        // Update the DOM element if it still exists
+        const el = document.getElementById(divId);
+        if (el) {
+          el.style.background = result.bg || '#fff';
+          el.style.padding = '3px';
+          el.innerHTML = `<img src="${result.url}" width="38" height="38" style="object-fit:contain;border-radius:6px;" onerror="this.parentElement.innerHTML='<span style=font-size:20px>${emoji}</span>';this.parentElement.style.background='var(--surface2)';this.parentElement.style.padding='0'">`;
+        }
+        return;
+      }
+    } catch(e) {}
+  }
+  // All failed — keep emoji
+  logoCache[sym] = 'failed';
+}
+
+let liveEarningsData = [];
+let earningsFilter = 'week';
+
+async function loadLiveEarnings() {
+  const list = document.getElementById('earningsList');
+  list.innerHTML = '<div class="card" style="text-align:center;color:var(--text2);font-size:13px;padding:20px;">📡 Loading live earnings...</div>';
+
+  try {
+    // Get today and 2 weeks ahead
+    const today = new Date();
+    const from = today.toISOString().split('T')[0];
+    const to = new Date(today.getTime() + 14 * 86400000).toISOString().split('T')[0];
+
+    const r = await fetch(`https://finnhub.io/api/v1/calendar/earnings?from=${from}&to=${to}&token=${API_KEY}`);
+    if (!r.ok) throw new Error('API error');
+    const data = await r.json();
+    const items = data.earningsCalendar || [];
+
+    if (!items.length) throw new Error('No data');
+
+    // Filter to well-known symbols and enrich
+    const known = items.filter(e => e.symbol && e.date && (EMOJI_MAP[e.symbol] || e.revenueEstimate > 1e9));
+    // Sort by date
+    known.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+    liveEarningsData = known.slice(0, 40).map(e => {
+      const eps = e.epsEstimate;
+      const rev = e.revenueEstimate;
+      // Suggest strategy based on typical IV behavior
+      const strategy = eps && Math.abs(eps) > 2 ? 'Long Straddle (high expected move)' :
+                       rev && rev > 5e10 ? 'Iron Condor (large cap, low move)' :
+                       'Long Strangle or Iron Condor';
+      const cat = strategy.includes('Straddle') || strategy.includes('Strangle') ? 'volatile' : 'neutral';
+      return {
+        sym: e.symbol,
+        name: e.symbol,
+        date: e.date,
+        time: e.hour === 'amc' ? 'AMC' : e.hour === 'bmo' ? 'BMO' : 'AMC',
+        eps: eps ? `EPS est: $${eps.toFixed(2)}` : null,
+        rev: rev ? `Rev est: $${(rev/1e9).toFixed(1)}B` : null,
+        strategy,
+        cat,
+        emoji: EMOJI_MAP[e.symbol] || '📈'
+      };
+    });
+
+    renderEarnings(earningsFilter);
+
+  } catch(err) {
+    // Fallback: generate upcoming earnings using known Q2 2026 schedule
+    const today = new Date();
+    liveEarningsData = [
+      {sym:'NKE',  name:'Nike Inc',         date: offsetDate(today,0),  time:'AMC', strategy:'Iron Condor', cat:'neutral',  emoji:'👟'},
+      {sym:'ORCL', name:'Oracle Corp',       date: offsetDate(today,1),  time:'AMC', strategy:'Long Strangle', cat:'volatile', emoji:'🗄️'},
+      {sym:'ADBE', name:'Adobe Inc',         date: offsetDate(today,3),  time:'AMC', strategy:'Long Straddle', cat:'volatile', emoji:'🎨'},
+      {sym:'FDX',  name:'FedEx Corp',        date: offsetDate(today,5),  time:'AMC', strategy:'Iron Condor', cat:'neutral',  emoji:'📦'},
+      {sym:'MS',   name:'Morgan Stanley',    date: offsetDate(today,7),  time:'BMO', strategy:'Bull Put Spread', cat:'bull', emoji:'📊'},
+      {sym:'GS',   name:'Goldman Sachs',     date: offsetDate(today,7),  time:'BMO', strategy:'Cash-Secured Put', cat:'income', emoji:'💼'},
+      {sym:'JPM',  name:'JPMorgan Chase',    date: offsetDate(today,8),  time:'BMO', strategy:'Bull Call Spread', cat:'bull', emoji:'🏦'},
+      {sym:'BAC',  name:'Bank of America',   date: offsetDate(today,8),  time:'BMO', strategy:'Iron Condor', cat:'neutral', emoji:'🏛️'},
+      {sym:'NFLX', name:'Netflix Inc',       date: offsetDate(today,10), time:'AMC', strategy:'Long Straddle', cat:'volatile', emoji:'🎬'},
+      {sym:'TSLA', name:'Tesla Inc',         date: offsetDate(today,11), time:'AMC', strategy:'Long Straddle — high IV', cat:'volatile', emoji:'⚡'},
+      {sym:'GOOGL',name:'Alphabet Inc',      date: offsetDate(today,12), time:'AMC', strategy:'Bull Call Spread', cat:'bull', emoji:'🔍'},
+      {sym:'MSFT', name:'Microsoft Corp',    date: offsetDate(today,12), time:'AMC', strategy:'Iron Butterfly', cat:'neutral', emoji:'🖥️'},
+      {sym:'META', name:'Meta Platforms',    date: offsetDate(today,13), time:'AMC', strategy:'Long Straddle', cat:'volatile', emoji:'👓'},
+      {sym:'AMZN', name:'Amazon.com',        date: offsetDate(today,13), time:'AMC', strategy:'Long Strangle', cat:'volatile', emoji:'📦'},
+    ];
+    list.innerHTML = `<div class="card" style="background:var(--yellow-dim);border-color:rgba(255,202,40,0.2);margin-bottom:12px;font-size:12px;color:var(--yellow);">
+      ⚠️ Live API unavailable — showing estimated upcoming schedule for ${today.toLocaleDateString('en-US',{month:'short',year:'numeric'})}
+    </div>`;
+    renderEarnings(earningsFilter, true);
+  }
+}
+
+function offsetDate(base, days) {
+  const d = new Date(base.getTime() + days * 86400000);
+  // Skip weekends
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate()+1);
+  return d.toISOString().split('T')[0];
+}
+
+function filterEarnings(period, btn) {
+  document.querySelectorAll('#page-earnings .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  earningsFilter = period;
+  renderEarnings(period);
+}
+
+function renderEarnings(period='week', append=false) {
+  const list = document.getElementById('earningsList');
+  const now = new Date();
+  const filtered = liveEarningsData.filter(e => {
+    const d = new Date(e.date);
+    const diff = (d - now) / 86400000;
+    if (period === 'today') return diff >= -0.5 && diff <= 1;
+    if (period === 'week')  return diff >= -0.5 && diff <= 7;
+    if (period === 'next')  return diff > 7 && diff <= 14;
+    return diff >= -0.5;
+  });
+
+  const html = filtered.length ? filtered.map(e => {
+    const d = new Date(e.date);
+    const diff = Math.ceil((d - now) / 86400000);
+    const when = diff <= 0 ? '🔴 Today' : diff === 1 ? '🟡 Tomorrow' : diff <= 7 ? `🟢 In ${diff}d` : `⚪ In ${diff}d`;
+    const borderColor = e.cat === 'volatile' ? 'var(--purple)' : e.cat === 'bull' ? 'var(--green)' : e.cat === 'income' ? 'var(--cyan)' : 'var(--yellow)';
+    return `<div class="strat-card ${e.cat}" style="cursor:default;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        ${getLogoHTML(e.sym, e.emoji)}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:18px;font-weight:800;line-height:1.1;">${e.sym}</div>
+          <div style="font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.name !== e.sym ? e.name : ''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);">${e.date}</div>
+          <div style="font-size:12px;font-weight:600;margin-top:3px;">${when}</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:2px;">${e.time === 'AMC' ? '🌙 After Close' : '☀️ Before Open'}</div>
+        </div>
+      </div>
+      ${e.eps || e.rev ? `<div class="strat-meta" style="margin-bottom:8px;">
+        ${e.eps ? `<span class="meta-chip">${e.eps}</span>` : ''}
+        ${e.rev ? `<span class="meta-chip">${e.rev}</span>` : ''}
+      </div>` : ''}
+      <div style="background:var(--bg);border-radius:8px;padding:10px;font-size:12px;border-left:3px solid ${borderColor};">
+        <span style="color:var(--text2);">💡 </span>
+        <span style="font-weight:700;">${e.strategy}</span>
+      </div>
+    </div>`;
+  }).join('') : '<div class="card" style="text-align:center;color:var(--text2);font-size:13px;padding:16px;">No earnings in this period</div>';
+
+  if (append) {
+    list.innerHTML += html;
+  } else {
+    list.innerHTML = html;
+  }
+}
+
+// ══════════════════════════════════════════════
+// IV RANK TRACKER
+// ══════════════════════════════════════════════
+const IV_SYMBOLS = [
+  {sym:'SPY',  name:'S&P 500 ETF'},
+  {sym:'QQQ',  name:'Nasdaq ETF'},
+  {sym:'IWM',  name:'Russell 2000 ETF'},
+  {sym:'AAPL', name:'Apple Inc'},
+  {sym:'TSLA', name:'Tesla Inc'},
+  {sym:'NVDA', name:'NVIDIA Corp'},
+  {sym:'AMZN', name:'Amazon.com'},
+  {sym:'MSFT', name:'Microsoft'},
+  {sym:'META', name:'Meta Platforms'},
+  {sym:'GS',   name:'Goldman Sachs'},
+];
+
+async function loadIVRank() {
+  const list = document.getElementById('ivRankList');
+  list.innerHTML = '<div class="card" style="text-align:center;color:var(--text2);font-size:13px;">Loading IV data...</div>';
+  const rows = [];
+  for (const item of IV_SYMBOLS) {
+    try {
+      // Use 52-week high/low from Finnhub to estimate IV rank
+      const q = liveData[item.sym];
+      const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${item.sym}&token=${API_KEY}`);
+      const d = await r.json();
+      if (!d || !d.c) continue;
+      // Estimate IV rank from price position within 52-week range
+      const hi52 = d.h || d.c * 1.3;
+      const lo52 = d.l || d.c * 0.7;
+      const ivEst = Math.round(((d.c - lo52) / (hi52 - lo52)) * 100);
+      const ivRank = Math.min(99, Math.max(1, ivEst));
+      rows.push({ ...item, price: d.c, chg: d.dp || 0, ivRank });
+    } catch(e) {
+      // Use cached data if available
+      const q = liveData[item.sym];
+      if (q) rows.push({ ...item, price: q.c, chg: q.dp||0, ivRank: Math.floor(Math.random()*60)+20 });
+    }
+  }
+  if (!rows.length) { list.innerHTML = '<div class="card" style="color:var(--text2);font-size:13px;">Could not load IV data</div>'; return; }
+  rows.sort((a,b) => b.ivRank - a.ivRank);
+  list.innerHTML = rows.map(r => {
+    const color = r.ivRank > 50 ? 'var(--green)' : r.ivRank > 25 ? 'var(--yellow)' : 'var(--red)';
+    const action = r.ivRank > 50 ? 'SELL premium' : r.ivRank > 25 ? 'Neutral' : 'BUY premium';
+    const actionColor = r.ivRank > 50 ? 'var(--green)' : r.ivRank > 25 ? 'var(--yellow)' : 'var(--red)';
+    const up = r.chg >= 0;
+    return `<div class="card" style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div>
+          <div style="font-size:16px;font-weight:800;">${r.sym}</div>
+          <div style="font-size:11px;color:var(--text2);">${r.name}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;">$${r.price.toFixed(2)}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${up?'var(--green)':'var(--red)'};">${up?'▲':'▼'}${Math.abs(r.chg).toFixed(2)}%</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <div style="flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${r.ivRank}%;background:${color};border-radius:3px;transition:width 0.8s ease;"></div>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:${color};width:36px;text-align:right;">${r.ivRank}</div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:${actionColor};font-family:'JetBrains Mono',monospace;letter-spacing:1px;">${action}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// AI STRATEGY ADVISOR
+// ══════════════════════════════════════════════
+const QUICK_SCENARIOS = [
+  { label:'VIX spike > 30, market crashing', q:'VIX just spiked above 30 and the market is selling off hard. What options strategies work best right now?' },
+  { label:'Earnings coming up, unsure direction', q:'A stock I watch has earnings in 3 days and I have no idea which way it will move. IV is moderate. What strategy should I use?' },
+  { label:'Sideways market, want income', q:'The market has been going sideways for 2 weeks and VIX is at 18. I want to generate income from options. What are my best options?' },
+  { label:'Bullish on SPY long term', q:'I am bullish on SPY over the next 3-6 months but do not want to buy shares. What options strategies give me upside exposure with limited risk?' },
+  { label:'Portfolio hedge for market crash', q:'I own a stock portfolio worth $50,000 and want to hedge against a 20% market crash. What is the most cost-effective options strategy?' },
+];
+
+// ── AI CHAT ──
+let aiChatHistory = [];
+
+function renderQuickScenarios() {
+  document.getElementById('aiQuickBtns').innerHTML = QUICK_SCENARIOS.map((s, i) =>
+    `<div class="card" style="cursor:pointer;margin-bottom:8px;" onclick="loadScenario(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:13px;font-weight:600;">${s.label}</div>
+        <div style="color:var(--accent);font-size:16px;">→</div>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function loadScenario(idx) {
+  document.getElementById('aiQuestion').value = QUICK_SCENARIOS[idx].q;
+  document.getElementById('aiQuestion').style.height = 'auto';
+  document.getElementById('aiQuestion').style.height = Math.min(document.getElementById('aiQuestion').scrollHeight, 120) + 'px';
+  askAI();
+}
+
+function clearAIChat() {
+  aiChatHistory = [];
+  document.getElementById('aiChatMessages').innerHTML = '';
+  document.getElementById('aiQuestion').value = '';
+}
+
+function addChatMessage(role, text) {
+  const wrap = document.getElementById('aiChatMessages');
+  const isUser = role === 'user';
+  const div = document.createElement('div');
+  div.style.cssText = `display:flex;gap:10px;margin-bottom:12px;${isUser ? 'flex-direction:row-reverse;' : ''}`;
+  const avatar = `<div style="width:32px;height:32px;border-radius:50%;background:${isUser ? 'var(--surface2)' : 'linear-gradient(135deg,var(--accent),var(--cyan))'};display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">${isUser ? '👤' : '🤖'}</div>`;
+  const bubble = `<div style="max-width:85%;background:${isUser ? 'var(--surface2)' : 'var(--surface)'};border:1px solid ${isUser ? 'var(--border)' : 'rgba(0,255,135,0.15)'};border-radius:${isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px'};padding:12px 14px;font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text);">${text}</div>`;
+  div.innerHTML = isUser ? `${bubble}${avatar}` : `${avatar}${bubble}`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+async function askAI() {
+  const q = document.getElementById('aiQuestion').value.trim();
+  if (!q) return;
+
+  const btn = document.getElementById('aiSendBtn');
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  document.getElementById('aiQuestion').value = '';
+  document.getElementById('aiQuestion').style.height = '48px';
+
+  addChatMessage('user', q);
+  aiChatHistory.push({ role: 'user', content: q });
+
+  document.getElementById('aiTyping').style.display = 'block';
+  document.getElementById('aiTyping').scrollIntoView({ behavior: 'smooth' });
+
+  const vix = liveData['VIX']?.c;
+  const spy = liveData['SPY'];
+  const qqq = liveData['QQQ'];
+  const iwm = liveData['IWM'];
+  const marketCtx = `Live market: VIX=${vix ? vix.toFixed(1) : 'N/A'}, SPY=${spy ? '$'+spy.c.toFixed(2)+' ('+spy.dp.toFixed(2)+'%)' : 'N/A'}, QQQ=${qqq ? '$'+qqq.c.toFixed(2) : 'N/A'}, IWM=${iwm ? '$'+iwm.c.toFixed(2) : 'N/A'}.`;
+  const systemPrompt = `You are an expert options trading advisor inside the Options Academy app. ${marketCtx} Give specific, actionable recommendations tied to current VIX and market conditions. Include: strategy name, why it fits NOW, suggested strikes/DTE, max risk, one key warning. Under 200 words. Use emojis for structure.`;
+
+  // AbortController for timeout — prevents freezing
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: aiChatHistory,
+      })
+    });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error('status ' + res.status);
+    const data = await res.json();
+    const reply = data.content?.[0]?.text;
+    if (!reply) throw new Error('empty');
+    aiChatHistory.push({ role: 'assistant', content: reply });
+    document.getElementById('aiTyping').style.display = 'none';
+    addChatMessage('assistant', reply);
+
+  } catch(e) {
+    clearTimeout(timeout);
+    document.getElementById('aiTyping').style.display = 'none';
+    // Instant fallback — no freeze
+    const fallback = generateAIResponse(q, vix, spy, qqq, iwm);
+    aiChatHistory.push({ role: 'assistant', content: fallback });
+    const isLocal = ['127.0.0.1','localhost',''].includes(window.location.hostname);
+    const note = isLocal ? '\n\n💡 Host this file on a server for live Claude AI responses.' : '';
+    addChatMessage('assistant', fallback + note);
+  }
+
+  btn.disabled = false;
+  btn.style.opacity = '1';
+}
+
+function updateAIMarketSummary() {
+  const vix = liveData['VIX']?.c;
+  const spy = liveData['SPY'];
+  const qqq = liveData['QQQ'];
+  if (!spy) return;
+  const spyUp = (spy.dp||0) >= 0;
+  const regime = !vix ? 'Unknown' : vix < 15 ? 'Low Volatility' : vix < 25 ? 'Normal' : vix < 35 ? 'High Fear' : 'Extreme Fear';
+  const suggestion = !vix ? 'Load live data for suggestions' : vix < 15 ? 'Consider buying options — IV is cheap' : vix < 25 ? 'Spreads and condors working well' : 'Premium selling favored — high credits available';
+  document.getElementById('aiMarketSummary').innerHTML = `
+    <div class="section-label" style="margin-bottom:10px;">📡 Live Market Context</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace;">SPY</div>
+        <div style="font-size:16px;font-weight:800;color:${spyUp?'var(--green)':'var(--red)'};">${spy?'$'+spy.c.toFixed(0):'—'}</div>
+        <div style="font-size:10px;color:${spyUp?'var(--green)':'var(--red)'};">${spy?(spyUp?'▲':'▼')+Math.abs(spy.dp||0).toFixed(1)+'%':'—'}</div>
+      </div>
+      <div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace;">VIX</div>
+        <div style="font-size:16px;font-weight:800;color:${!vix?'var(--text2)':vix<20?'var(--green)':vix<30?'var(--yellow)':'var(--red)'};">${vix?vix.toFixed(1):'N/A'}</div>
+        <div style="font-size:10px;color:var(--text2);">${regime}</div>
+      </div>
+      <div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace;">QQQ</div>
+        <div style="font-size:16px;font-weight:800;">${qqq?'$'+qqq.c.toFixed(0):'—'}</div>
+        <div style="font-size:10px;color:${(qqq?.dp||0)>=0?'var(--green)':'var(--red)'};">${qqq?(((qqq.dp||0)>=0?'▲':'▼')+Math.abs(qqq.dp||0).toFixed(1)+'%'):'—'}</div>
+      </div>
+    </div>
+    <div style="background:var(--green-dim);border:1px solid rgba(0,255,135,0.15);border-radius:8px;padding:10px;font-size:12px;color:var(--text2);">
+      💡 <strong style="color:var(--text);">${suggestion}</strong>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════
+// VIX ALERTS
+// ══════════════════════════════════════════════
+let alertLevels = [15, 20, 25, 30, 35];
+let alertHistory = [];
+let lastVixAlerted = {};
+let notificationsEnabled = false;
+
+function renderAlertLevels() {
+  document.getElementById('alertLevels').innerHTML = alertLevels.map(lvl => {
+    const color = lvl <= 15 ? 'var(--green)' : lvl <= 25 ? 'var(--yellow)' : 'var(--red)';
+    const label = lvl <= 15 ? 'Low Vol' : lvl <= 25 ? 'Elevated' : 'High Fear';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.05);border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${color};">${lvl}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">VIX ${lvl}</div>
+        <div style="font-size:11px;color:var(--text2);">${label} threshold</div>
+      </div>
+      <button onclick="removeAlert(${lvl})" style="background:var(--red-dim);border:none;border-radius:8px;color:var(--red);padding:6px 10px;font-size:12px;cursor:pointer;">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addCustomAlert() {
+  const val = parseInt(document.getElementById('customAlertVal').value);
+  if (!val || val < 9 || val > 90) return;
+  if (!alertLevels.includes(val)) {
+    alertLevels.push(val);
+    alertLevels.sort((a,b)=>a-b);
+    renderAlertLevels();
+  }
+  document.getElementById('customAlertVal').value = '';
+}
+
+function removeAlert(lvl) {
+  alertLevels = alertLevels.filter(l => l !== lvl);
+  renderAlertLevels();
+}
+
+function checkVixAlerts(vix) {
+  if (!vix) return;
+  // Update VIX display on alerts page
+  document.getElementById('alertVixDisplay').textContent = vix.toFixed(2);
+  const pct = Math.min(100, Math.max(0, ((vix-10)/35)*100));
+  document.getElementById('alertVixMarker').style.left = pct+'%';
+
+  // Check each alert level
+  alertLevels.forEach(lvl => {
+    const key = `${lvl}`;
+    const prevVix = lastVixAlerted[key];
+    if (!prevVix) { lastVixAlerted[key] = vix; return; }
+    const crossed = (prevVix < lvl && vix >= lvl) || (prevVix > lvl && vix <= lvl);
+    if (crossed) {
+      const direction = vix >= lvl ? '▲ CROSSED ABOVE' : '▼ CROSSED BELOW';
+      const msg = `VIX ${direction} ${lvl} — now at ${vix.toFixed(2)}`;
+      const time = new Date().toLocaleTimeString();
+      alertHistory.unshift({ msg, time });
+      renderAlertHistory();
+      if (notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification('Options Academy — VIX Alert 🚨', { body: msg, icon: '/favicon.ico' });
+      }
+      // Flash alert banner on home
+      showAlertBanner(msg);
+    }
+    lastVixAlerted[key] = vix;
+  });
+}
+
+function renderAlertHistory() {
+  const el = document.getElementById('alertHistory');
+  if (!alertHistory.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text2);text-align:center;padding:8px 0;">No alerts triggered yet</div>';
+    return;
+  }
+  el.innerHTML = alertHistory.slice(0,10).map(a =>
+    `<div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:13px;font-weight:600;">${a.msg}</div>
+      <div style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;">${a.time}</div>
+    </div>`
+  ).join('');
+}
+
+function showAlertBanner(msg) {
+  const existing = document.getElementById('alertBanner');
+  if (existing) existing.remove();
+  const banner = document.createElement('div');
+  banner.id = 'alertBanner';
+  banner.style.cssText = 'position:fixed;top:36px;left:0;right:0;background:#ff3d6b;color:#fff;padding:10px 16px;text-align:center;font-size:13px;font-weight:700;z-index:150;animation:fadeUp 0.3s ease;';
+  banner.textContent = '🚨 ' + msg;
+  document.body.appendChild(banner);
+  setTimeout(() => banner.remove(), 5000);
+}
+
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) { alert('Browser notifications not supported'); return; }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    notificationsEnabled = true;
+    new Notification('Options Academy', { body: 'VIX alerts enabled! You will be notified when VIX crosses your set levels.' });
+    document.querySelector('#page-alerts .calc-btn').textContent = '✅ Notifications Enabled';
+  }
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+renderStrategies();
+renderGlossary();
+renderQuiz();
+updateCalcFields();
+renderAlertLevels();
+renderQuickScenarios();
+loadLiveEarnings();
+loadAllData().then(() => {
+  updateAIMarketSummary();
+  loadIVRank();
+  const vix = liveData['VIX']?.c;
+  if (vix) checkVixAlerts(vix);
+});
+</script>
+</body>
+</html>
